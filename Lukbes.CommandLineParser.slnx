@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Lukbes.CommandLineParser.Testing/Lukbes.CommandLineParser.Testing.csproj" />
+  <Project Path="Lukbes.CommandLineParser/Lukbes.CommandLineParser.csproj" />
+</Solution>
