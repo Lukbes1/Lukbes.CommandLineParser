@@ -8,7 +8,7 @@ public class DoubleConverter : IConverter<double>
         bool hasError = double.TryParse(value, out result);
         if (!hasError)
         {
-            return $"{value} could not be parsed as a double";
+            return $"\"{value}\" could not be parsed as a double";
         }
 
         return null;

@@ -9,11 +9,13 @@ namespace Lukbes.CommandLineParser
         public static bool WithExceptions;
 
         private readonly HashSet<IArgument> _arguments = new();
-        
+
         public IValuesExtractor? Extractor { get; private set; }
-        
+
+        public Dictionary<Delegate, IArgument[]> ArgumentHandlers { get; private set; } = [];
         public IArgument HelpArg { get; private set; }
-        
+
+
         /// <summary>
         /// Gets a new instance of an <see cref="CommandLineParserBuilder"/> 
         /// </summary>
@@ -41,15 +43,43 @@ namespace Lukbes.CommandLineParser
             _arguments = other._arguments;
             HelpArg = other.HelpArg;
             Extractor = other.Extractor;
+            ArgumentHandlers = other.ArgumentHandlers;
         }
         
         public List<string> Parse(string[] args)
         {
             List<string> errors = new();
-            var extractedValues = Extractor!.Extract(args);
+            var extractedValues = Extractor!.Extract(args); //Extract
             errors.AddRange(extractedValues.errors);
+            ApplyValuesAndRules(extractedValues, errors);
+            ValidateDependencies(errors);
+            if (errors.Any())
+            {
+                return errors;
+            }
+            foreach (var handlerEntry in ArgumentHandlers)
+            {
+                try
+                {
+                    object?[] values = handlerEntry.Value.Select(a => a.Value).ToArray();
+                    handlerEntry.Key.DynamicInvoke(values);
+                }
+                catch (Exception e)
+                {
+                    errors.Add(e.Message);
+                    if (WithExceptions)
+                    {
+                        throw new ParsingException(errors, args);
+                    }
+                }
+            }
+            return errors;
+        }
 
-            foreach (var extractedEntry in extractedValues.identifierAndValues)
+        private void ApplyValuesAndRules(
+            (Dictionary<ArgumentIdentifier, string?> identifierAndValues, List<string> errors) extractedValues, List<string> errors)
+        {
+            foreach (var extractedEntry in extractedValues.identifierAndValues) //Apply Values and Rules
             {
                 IArgument? foundArgument = _arguments.FirstOrDefault(x => x.Identifier.Equals(extractedEntry.Key)); //Only the short OR long version has to match
                 if (foundArgument is null)
@@ -64,14 +94,15 @@ namespace Lukbes.CommandLineParser
                 var applyErrors = foundArgument.Apply(extractedEntry.Value);
                 errors.AddRange(applyErrors);
             }
-            
-            foreach (var argument in _arguments)
+        }
+        private void ValidateDependencies(List<string> errors)
+        {
+            foreach (var argument in _arguments) 
             {
                 var allOtherArgs = _arguments.Where(a => !ReferenceEquals(a, argument)).ToHashSet();
                 var dependencyErrors = argument.ValidateDependencies(allOtherArgs);
                 errors.AddRange(dependencyErrors);
             }
-            return errors;
         }
 
         /// <summary>
@@ -179,6 +210,42 @@ namespace Lukbes.CommandLineParser
             public CommandLineParserBuilder CustomValuesExtractor(IValuesExtractor valueExtractor)
             {
                 _parser.Extractor = valueExtractor;
+                return this;
+            }
+
+            /// <summary>
+            /// Add a handler that gets called if the specified combo of <paramref name="arguments"/> is provided
+            /// </summary>
+            /// <param name="handler">The function thats called if the combo of arguments is provided</param>
+            /// <param name="arguments">the arguments that should be provided</param>
+            /// <returns></returns>
+            /// <exception cref="InvalidOperationException"></exception>
+            public CommandLineParserBuilder Handler(Delegate handler, params IArgument[] arguments)
+            {
+                var parameters = handler.Method.GetParameters();
+
+                if (parameters.Length is 0)
+                {
+                    throw new ArgumentException($"Error: Handler method must have at least one parameter.");
+                }
+                if (parameters.Length != arguments.Length)
+                {
+                    throw new ArgumentException($"Error: The number of arguments in the handler does not match the number of arguments provided. Expected: {parameters.Length}, Actual: {arguments.Length}");
+                }
+                
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    var expectedType = parameters[i].ParameterType;
+                    var argument = arguments[i];
+
+                    if (arguments[i].ValueType != expectedType)
+                    {
+                        throw new ArgumentException(
+                            $"Error: The type of {argument.Identifier} does not match expected {expectedType} type. Actual: {argument.ValueType}");
+                    }
+                }
+                
+                _parser.ArgumentHandlers.Add(handler, arguments);
                 return this;
             }
 

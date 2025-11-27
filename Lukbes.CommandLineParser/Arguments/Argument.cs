@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text;
 using Lukbes.CommandLineParser.Arguments.Dependencies;
 using Lukbes.CommandLineParser.Arguments.Rules;
 using Lukbes.CommandLineParser.Arguments.TypeConverter;
@@ -12,8 +13,16 @@ namespace Lukbes.CommandLineParser.Arguments;
 public class Argument<T> : IArgument
 {
     public T? Value { get; private set; } = default;
+
+    object? IArgument.Value => Value;
+    
+    public Type ValueType => typeof(T);
     
     public bool HasValue { get; private set; }
+
+    private T defaultValue;
+    
+    public bool HasDefaultValue { get; private set; }
     
     public ArgumentIdentifier Identifier { get; private set; } = new();
     
@@ -51,12 +60,15 @@ public class Argument<T> : IArgument
     private Argument(Argument<T> other)
     {
         Value = other.Value;
+        HasDefaultValue = other.HasDefaultValue;
+        HasValue = other.HasDefaultValue;
         Identifier = other.Identifier;
         IsRequired = other.IsRequired;
         Converter = other.Converter;
         Description = other.Description;
         _rules = other._rules;
         Dependencies = other.Dependencies;
+        defaultValue = other.defaultValue;
     }
     
     public List<string> Apply(string? value)
@@ -73,8 +85,9 @@ public class Argument<T> : IArgument
         }
 
         string? convertError = Converter!.TryConvert(value, out var result);
-        if (convertError is not null)
+        if (convertError is not null && defaultValue is not null)
         {
+            HasValue = false;
             if (CommandLineParser.WithExceptions)
             {
                 throw new ArgumentConvertException<T>(Identifier, value!, convertError);
@@ -147,10 +160,36 @@ public class Argument<T> : IArgument
         return Identifier.GetHashCode();
     }
 
+    /// <summary>
+    /// Gives back a string that is a standard way of writing arguments:<br/>
+    /// optional -> [-a, --arg]: int | My Description 
+    /// required -> -a, --arg: string | My other Description
+    /// 
+    /// </summary>
+    /// <returns></returns>
     public override string ToString()
     {
-    //TODO 
-     return Identifier.ToString();
+        StringBuilder result = new();
+        if (IsRequired)
+        {
+            result.Append($"[{Identifier}]").Append(' ');
+        }
+        else
+        {
+            result.Append(Identifier).Append(' ');
+        }
+
+        result.Append(": ")
+            .Append(typeof(T).Name)
+            .Append(" | ")
+            .Append(Description);
+
+        if (HasDefaultValue)
+        {
+            result.Append($"(Default: {defaultValue})");
+        }
+        
+        return result.ToString();
     }
 
 
@@ -217,6 +256,20 @@ public class Argument<T> : IArgument
         }
 
         /// <summary>
+        /// Sets a default value 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public ArgumentBuilder<T> DefaultValue(T value)
+        {
+            _argument.defaultValue = value;
+            _argument.Value = value;
+            _argument.HasDefaultValue = true;
+            _argument.HasValue = true;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the converter of the  <see cref="Argument{T}"/>
         /// </summary>
         /// <param name="converter"></param>
@@ -237,6 +290,8 @@ public class Argument<T> : IArgument
             _argument._rules.Add(rule);
             return this;
         }
+        
+        #region Dependencies
 
         /// <summary>
         /// Adds a dependency to the <see cref="Argument{T}"/>
@@ -252,24 +307,27 @@ public class Argument<T> : IArgument
         /// <summary>
         /// If this <see cref="Argument{T}"/> is present and has a value, also require all <paramref name="arguments"/>
         /// </summary>
+        /// <param name="first"></param>
         /// <param name="arguments"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> RequiresAll(params IArgument[] arguments)
+        public ArgumentBuilder<T> RequiresAll(IArgument first, params IArgument[] arguments)
         {
-            _argument.Dependencies.Add(new RequiresAll(arguments));
+            _argument.Dependencies.Add(new RequiresAll(first, arguments));
             return this;
         }
         
         /// <summary>
         /// If this <see cref="Argument{T}"/> is present and has a value, also require at least one of <paramref name="arguments"/>
         /// </summary>
+        /// <param name="first"></param>
         /// <param name="arguments"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> RequiresOneOf(params IArgument[] arguments)
+        public ArgumentBuilder<T> RequiresOneOf(IArgument first, params IArgument[] arguments)
         {
-            _argument.Dependencies.Add(new RequiresOneOf(arguments));
+            _argument.Dependencies.Add(new RequiresOneOf(first, arguments));
             return this;
         }
+        #endregion
         
         /// <summary>
         /// Builds the <see cref="Argument{T}"/> and gives it back.

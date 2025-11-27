@@ -5,6 +5,6 @@ public class ArgumentDoesNotExistException(ArgumentIdentifier identifier) : Exce
     
     public static string CreateMessage(ArgumentIdentifier identifier)
     {
-        return $"Error: Argument {identifier} is not a valid argument";
+        return $"Error: Argument \"{identifier}\" is not a valid argument";
     }
 }

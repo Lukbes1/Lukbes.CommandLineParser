@@ -1,6 +1,5 @@
-﻿using System.Globalization;
+﻿
 using Lukbes.CommandLineParser.Arguments;
-using Lukbes.CommandLineParser.Arguments.Dependencies;
 using Lukbes.CommandLineParser.Arguments.Rules;
 using Lukbes.CommandLineParser.Arguments.TypeConverter;
 
@@ -41,7 +40,7 @@ namespace Lukbes.CommandLineParser.Testing
 
         private static void testTwo(string[] args)
         {
-            CommandLineParser.WithExceptions = true;
+            CommandLineParser.WithExceptions = false;
             var audioArgument = new Argument<bool>(builder =>
             {
                 builder.Identifier(new("a", "audio"));
@@ -51,6 +50,7 @@ namespace Lukbes.CommandLineParser.Testing
             var videoArgument = new Argument<bool>(builder =>
             {
                 builder.ShortIdentifier("v");
+                builder.LongIdentifier("video");
                 return builder.Build();
             });
                 
@@ -60,20 +60,22 @@ namespace Lukbes.CommandLineParser.Testing
                 builder.IsRequired();
                 builder.Description("The youtube link");
                 builder.Rule(new HttpLinkRule());
-                builder.RequiresOneOf(audioArgument, videoArgument);
+                builder.RequiresAll(audioArgument);
                 return builder.Build();
             });
 
             CommandLineParser youtubeParser = new CommandLineParser(builder =>
             {
                 builder.Arguments(urlArgument, videoArgument, audioArgument);
+                builder.Handler((string url, bool audio, bool video) =>
+                {
+                    Console.WriteLine($"Url: {url}");
+                    Console.WriteLine($"Audio: {audio}");
+                    Console.WriteLine($"Video: {video}");
+                }, urlArgument,  audioArgument, videoArgument);
                 return builder.Build();
             });
             var errors = youtubeParser.Parse(args);
-
-            Console.WriteLine(urlArgument.Value);
-            Console.WriteLine(audioArgument.Value);
-            Console.WriteLine(videoArgument.Value);
 
             foreach (var error in errors)
             {

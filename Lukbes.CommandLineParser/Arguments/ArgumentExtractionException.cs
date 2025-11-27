@@ -6,6 +6,6 @@ public class ArgumentExtractionException(ArgumentIdentifier identifier, object? 
 
     public static string CreateMessage(ArgumentIdentifier identifier, object? expected, object? actual)
     {
-        return $"Error: {identifier} did not satisfy expected {expected}. Actual is {actual}";
+        return $"Error: \"{identifier}\" did not satisfy expected {expected}. Actual is {actual}";
     }
 }

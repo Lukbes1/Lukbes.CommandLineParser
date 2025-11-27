@@ -31,7 +31,7 @@ public class ArgumentIdentifier(string? shortIdentifier = null, string? longIden
             return $"--{LongIdentifier}"; 
         } 
 
-        if (shortIdentifier is null && longIdentifier is null)
+        if (ShortIdentifier is null && LongIdentifier is null)
         {
             return "";
         }

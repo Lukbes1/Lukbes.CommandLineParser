@@ -13,6 +13,17 @@ public interface IArgument
     bool HasValue { get; }
     
     /// <summary>
+    /// The value of the argument
+    /// </summary>
+    object? Value { get; }
+    
+    
+    /// <summary>
+    /// The underlying type of the Value
+    /// </summary>
+    Type ValueType { get; }
+    
+    /// <summary>
     /// Unique identifier with short and long name
     /// </summary>
     ArgumentIdentifier Identifier { get; }

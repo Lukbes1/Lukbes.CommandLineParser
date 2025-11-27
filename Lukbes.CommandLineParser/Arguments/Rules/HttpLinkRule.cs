@@ -2,10 +2,16 @@
 
 namespace Lukbes.CommandLineParser.Arguments.Rules;
 
-public class HttpLinkRule : IRule<string>
+/// <summary>
+/// Checks if the <see cref="Argument{T}"/> of type string is a valid Httplink File via <see cref="File.Exists"/>
+/// </summary>
+public partial class HttpLinkRule : IRule<string>
 {
     public string? Validate(Argument<string> argument)
     {
-        return Regex.IsMatch(argument.Value!, @"^https?://[^\s/$.?#].[^\s]*$", RegexOptions.IgnoreCase) ? null : $"Error: The value {argument.Value} of {argument.Identifier} was not a http link";
+        return HttpLinkRegex().IsMatch(argument.Value!) ? null : $"The value \"{argument.Value}\" of \"{argument.Identifier}\" was not a http link";
     }
+
+    [GeneratedRegex(@"^https?://[^\s/$.?#].[^\s]*$", RegexOptions.IgnoreCase, "de-DE")]
+    private static partial Regex HttpLinkRegex();
 }
