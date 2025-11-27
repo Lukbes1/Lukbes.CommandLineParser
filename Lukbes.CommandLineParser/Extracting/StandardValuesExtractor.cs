@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Lukbes.CommandLineParser.Arguments;
 
 namespace Lukbes.CommandLineParser.Extracting;
 
@@ -9,16 +10,17 @@ namespace Lukbes.CommandLineParser.Extracting;
 public class StandardValuesExtractor : IValuesExtractor
 {
     private static readonly Regex REGEX = new(
-        @"^\s*--?(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>['""]?[^'""\s]+['""]?))?\s*$",
+        @"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>['""]?[^'""\s]+['""]?))?\s*$",
         RegexOptions.Compiled);
-    public (Dictionary<string, string?> identifierAndValues, List<string> errors) Extract(string[] args)
+    public (Dictionary<ArgumentIdentifier, string?> identifierAndValues, List<string> errors) Extract(string[] args)
     {
-        Dictionary<string, string?> identifierAndValues = new();
+        Dictionary<ArgumentIdentifier, string?> identifierAndValues = new();
         List<string> errors = new();
         foreach (var arg in args)
         {
             var match = REGEX.Match(arg);
             if (!match.Success) continue;
+            var dashType = match.Groups["dashType"].Value;
             var key = match.Groups["key"].Value;
             var value = match.Groups["value"].Value.Trim('\'', '"');
             if (string.IsNullOrEmpty(value))
@@ -32,7 +34,9 @@ public class StandardValuesExtractor : IValuesExtractor
                     value = null;
                 }
             }
-            identifierAndValues.Add(key, value);
+
+            ArgumentIdentifier identifier = new(dashType == "-" ? key : null, dashType == "--" ? key : null);
+            identifierAndValues.Add(identifier, value);
         }
         return (identifierAndValues, errors);
     }

@@ -41,28 +41,26 @@ namespace Lukbes.CommandLineParser.Testing
 
         private static void testTwo(string[] args)
         {
+            CommandLineParser.WithExceptions = true;
             var audioArgument = new Argument<bool>(builder =>
             {
                 builder.Identifier(new("a", "audio"));
-                builder.Converter(new BoolConverter());
                 return builder.Build();
             });
             
             var videoArgument = new Argument<bool>(builder =>
             {
-                builder.Identifier(new("v", "video"));
-                builder.Converter(new BoolConverter());
+                builder.ShortIdentifier("v");
                 return builder.Build();
             });
                 
             var urlArgument = new Argument<string>(builder =>
             {
+                builder.LongIdentifier("Url");
                 builder.IsRequired();
                 builder.Description("The youtube link");
-                builder.LongIdentifier("Url");
-                builder.Converter(new StringConverter());
                 builder.Rule(new HttpLinkRule());
-                builder.Dependency(new RequiresOneOf(audioArgument, videoArgument ));
+                builder.RequiresOneOf(audioArgument, videoArgument);
                 return builder.Build();
             });
 

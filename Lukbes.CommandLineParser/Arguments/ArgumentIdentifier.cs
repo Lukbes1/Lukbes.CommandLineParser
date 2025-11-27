@@ -1,7 +1,7 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments;
 
 /// <summary>
-/// An <see cref="ArgumentIdentifier"/> is uniquely defined by either their <see cref="ShortIdentifier"/> OR their <see cref="LongIdentifier"/>
+/// An <see cref="ArgumentIdentifier"/> is uniquely defined by either their <see cref="ShortIdentifier"/> or their <see cref="LongIdentifier"/>
 /// </summary>
 /// <param name="shortIdentifier"></param>
 /// <param name="longIdentifier"></param>
@@ -40,12 +40,12 @@ public class ArgumentIdentifier(string? shortIdentifier = null, string? longIden
     
     protected bool Equals(ArgumentIdentifier other)
     {
-        return ShortIdentifier == other.ShortIdentifier || LongIdentifier == other.LongIdentifier;
+        return (ShortIdentifier is not null && ShortIdentifier == other.ShortIdentifier) || (LongIdentifier is not null && LongIdentifier == other.LongIdentifier);
     }
     
     protected bool Equals(string other)
     {
-        return ShortIdentifier == other || LongIdentifier == other;
+        return (ShortIdentifier is not null && ShortIdentifier == other) || (LongIdentifier is not null && LongIdentifier == other);
     }
 
     public override bool Equals(object? obj)
@@ -56,11 +56,7 @@ public class ArgumentIdentifier(string? shortIdentifier = null, string? longIden
         {
             return Equals((ArgumentIdentifier)obj);
         }
-        if (obj.GetType() == typeof(string))
-        {
-            return Equals((string)obj);
-        }
-        return false;
+        return obj is string && Equals((string)obj);
     }
 
     public override int GetHashCode()

@@ -10,7 +10,7 @@ namespace Lukbes.CommandLineParser
 
         private readonly HashSet<IArgument> _arguments = new();
         
-        public IValuesExtractor Extractor { get; private set; }
+        public IValuesExtractor? Extractor { get; private set; }
         
         public IArgument HelpArg { get; private set; }
         
@@ -46,7 +46,7 @@ namespace Lukbes.CommandLineParser
         public List<string> Parse(string[] args)
         {
             List<string> errors = new();
-            var extractedValues = Extractor.Extract(args);
+            var extractedValues = Extractor!.Extract(args);
             errors.AddRange(extractedValues.errors);
 
             foreach (var extractedEntry in extractedValues.identifierAndValues)
@@ -54,6 +54,11 @@ namespace Lukbes.CommandLineParser
                 IArgument? foundArgument = _arguments.FirstOrDefault(x => x.Identifier.Equals(extractedEntry.Key)); //Only the short OR long version has to match
                 if (foundArgument is null)
                 {
+                    if (WithExceptions)
+                    {
+                        throw new ArgumentDoesNotExistException(extractedEntry.Key);
+                    }
+                    errors.Add(ArgumentDoesNotExistException.CreateMessage(extractedEntry.Key));
                     continue;
                 }
                 var applyErrors = foundArgument.Apply(extractedEntry.Value);
@@ -66,8 +71,7 @@ namespace Lukbes.CommandLineParser
                 var dependencyErrors = argument.ValidateDependencies(allOtherArgs);
                 errors.AddRange(dependencyErrors);
             }
-            
-           return errors;
+            return errors;
         }
 
         /// <summary>

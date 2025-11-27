@@ -22,7 +22,7 @@ public class Argument<T> : IArgument
     public bool IsRequired { get; private set; }
 
     public List<IDependency> Dependencies { get; private set; } = new();
-    public IConverter<T> Converter { get; private set; }
+    public IConverter<T>? Converter { get; private set; }
 
     private readonly HashSet<IRule<T>> _rules = new();
     
@@ -72,7 +72,7 @@ public class Argument<T> : IArgument
             errors.Add(ArgumentRequiredException<T>.CreateMessage(this));
         }
 
-        string? convertError = Converter.TryConvert(value, out T? result);
+        string? convertError = Converter!.TryConvert(value, out var result);
         if (convertError is not null)
         {
             if (CommandLineParser.WithExceptions)
@@ -250,6 +250,28 @@ public class Argument<T> : IArgument
         }
         
         /// <summary>
+        /// If this <see cref="Argument{T}"/> is present and has a value, also require all <paramref name="arguments"/>
+        /// </summary>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public ArgumentBuilder<T> RequiresAll(params IArgument[] arguments)
+        {
+            _argument.Dependencies.Add(new RequiresAll(arguments));
+            return this;
+        }
+        
+        /// <summary>
+        /// If this <see cref="Argument{T}"/> is present and has a value, also require at least one of <paramref name="arguments"/>
+        /// </summary>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public ArgumentBuilder<T> RequiresOneOf(params IArgument[] arguments)
+        {
+            _argument.Dependencies.Add(new RequiresOneOf(arguments));
+            return this;
+        }
+        
+        /// <summary>
         /// Builds the <see cref="Argument{T}"/> and gives it back.
         /// </summary>
         /// <returns></returns>
@@ -259,6 +281,15 @@ public class Argument<T> : IArgument
             if (!_argument.Identifier.Validate())
             {
                 throw new ArgumentIdentifierException(_argument.Identifier);
+            }
+
+            if (_argument.Converter is null)
+            {
+                if (DefaultConverterFactory.TryCreate(out IConverter<T>? converter)) 
+                {
+                    _argument.Converter = converter;
+                }
+                BuilderPropertyNullOrEmptyException<IConverter<T>>.ThrowIfNullOrEmpty(nameof(_argument.Converter), _argument.Converter);
             }
             BuilderPropertyNullOrEmptyException<IConverter<T>>.ThrowIfNullOrEmpty(nameof(_argument.Converter), _argument.Converter);
             return _argument;
