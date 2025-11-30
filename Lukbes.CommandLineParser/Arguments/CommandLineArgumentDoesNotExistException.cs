@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments;
 
-public class ArgumentDoesNotExistException(ArgumentIdentifier identifier) : Exception(CreateMessage(identifier))
+public sealed class CommandLineArgumentDoesNotExistException(ArgumentIdentifier identifier) : CommandLineArgumentException(CreateMessage(identifier))
 {
     
     public static string CreateMessage(ArgumentIdentifier identifier)

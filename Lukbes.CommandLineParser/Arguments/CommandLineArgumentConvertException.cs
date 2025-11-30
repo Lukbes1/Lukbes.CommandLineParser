@@ -2,7 +2,7 @@
 
 namespace Lukbes.CommandLineParser.Arguments;
 
-public class ArgumentConvertException<T>(ArgumentIdentifier identifier, string triedValue, string convertError) : Exception(CreateMessage(identifier, triedValue, convertError))
+public sealed class CommandLineArgumentConvertException<T>(ArgumentIdentifier identifier, string triedValue, string convertError) : CommandLineArgumentException(CreateMessage(identifier, triedValue, convertError))
 {
 
     public static string CreateMessage(ArgumentIdentifier identifier, string triedValue, string convertError)

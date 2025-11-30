@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments;
 
-public class ArgumentDependencyException(string error) : Exception(CreateMessage(error))
+public sealed class CommandLineArgumentDependencyException(string error) : CommandLineArgumentException(CreateMessage(error))
 {
     public static string CreateMessage(string error)
     {

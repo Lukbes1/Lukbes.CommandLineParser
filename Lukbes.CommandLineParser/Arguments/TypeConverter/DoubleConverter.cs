@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
-public class DoubleConverter : IConverter<double>
+public sealed class DoubleConverter : IConverter<double>
 {
     public string? TryConvert(string? value, out double result)
     {

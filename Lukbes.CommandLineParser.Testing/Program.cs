@@ -44,7 +44,6 @@ namespace Lukbes.CommandLineParser.Testing
             var audioArgument = new Argument<bool>(builder =>
             {
                 builder.Identifier(new("a", "audio"));
-                builder.DefaultValue(true);
                 return builder.Build();
             });
             
@@ -52,7 +51,6 @@ namespace Lukbes.CommandLineParser.Testing
             var videoArgument = new Argument<bool>(builder =>
             {
                 builder.ShortIdentifier("v");
-                builder.DefaultValue(true);
                 builder.LongIdentifier("video");
                 return builder.Build();
             });
@@ -83,6 +81,7 @@ namespace Lukbes.CommandLineParser.Testing
             {
                 Console.WriteLine(error);
             }
+            
         }
     }
 }

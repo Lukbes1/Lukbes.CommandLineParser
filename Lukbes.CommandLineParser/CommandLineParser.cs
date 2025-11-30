@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text;
 using Lukbes.CommandLineParser.Arguments;
 using Lukbes.CommandLineParser.Extracting;
 
@@ -13,9 +14,11 @@ namespace Lukbes.CommandLineParser
         public IValuesExtractor? Extractor { get; private set; }
 
         public Dictionary<Delegate, IArgument[]> ArgumentHandlers { get; private set; } = [];
-        public IArgument HelpArg { get; private set; }
-
-
+        
+        public IArgument? HelpArg { get; private set; }
+        
+        private static readonly IArgument DEFAULT_HELP_ARG = Argument<bool>.Builder().Identifier(new("h", "help")).Description("Use to print help out").Build();
+        
         /// <summary>
         /// Gets a new instance of an <see cref="CommandLineParserBuilder"/> 
         /// </summary>
@@ -49,8 +52,15 @@ namespace Lukbes.CommandLineParser
         public List<string> Parse(string[] args)
         {
             List<string> errors = new();
-            var extractedValues = Extractor!.Extract(args); //Extract
+            var extractedValues = Extractor!.Extract(args); 
             errors.AddRange(extractedValues.errors);
+            //Stop early on Help:
+            var hasHelpArg = extractedValues.identifierAndValues.Any(a => a.Key.Equals(HelpArg!.Identifier));
+            if (hasHelpArg)
+            {
+                PrintHelp();
+                return errors;
+            }
             ApplyValuesAndRules(extractedValues.identifierAndValues, errors);
             ValidateDependencies(errors);
             if (errors.Count > 0)
@@ -61,12 +71,19 @@ namespace Lukbes.CommandLineParser
             {
                 try
                 {
-                    if (!handlerEntry.Value.All(x => x.HasValue))
+                    if (handlerEntry.Value.Length == 0)
                     {
-                        continue;
+                        handlerEntry.Key.DynamicInvoke();
                     }
-                    object?[] values = handlerEntry.Value.Select(a => a.Value).ToArray();
-                    handlerEntry.Key.DynamicInvoke(values);
+                    else
+                    {
+                        if (!handlerEntry.Value.All(x => x.HasValue))
+                        {
+                            continue;
+                        }
+                        object?[] values = handlerEntry.Value.Select(a => a.Value).ToArray();
+                        handlerEntry.Key.DynamicInvoke(values);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -89,11 +106,10 @@ namespace Lukbes.CommandLineParser
                 {
                     if (WithExceptions)
                     {
-                        throw new ArgumentDoesNotExistException(providedArg);
+                        throw new CommandLineArgumentDoesNotExistException(providedArg);
                     }
-                    errors.Add(ArgumentDoesNotExistException.CreateMessage(providedArg));
+                    errors.Add(CommandLineArgumentDoesNotExistException.CreateMessage(providedArg));
                 }
-               
             }
             foreach (var argument in _arguments)
             {
@@ -165,6 +181,26 @@ namespace Lukbes.CommandLineParser
             argument = arg;
             return error;
         }
+        
+        public string GetHelpString()
+        {
+            var result = new StringBuilder();
+            result.AppendLine("Legend: ");
+            result.AppendLine("\tOptional args -> [-shortIdentifier, --longIdentifier] : Datatype | Description (Default: defaultVal)");
+            result.AppendLine("\tRequired args -> -shortIdentifier, --longIdentifier   : Datatype | Description (Default: defaultVal)");
+            result.AppendLine("Arguments: ");
+            foreach (var arg in _arguments)
+            {
+                result.Append('\t').Append(arg).AppendLine();
+            }
+            return result.Append('\t').Append(HelpArg).ToString();
+        }
+        
+        private void PrintHelp()
+        {
+            string help = GetHelpString();
+            Console.WriteLine(help);
+        }
 
         public class CommandLineParserBuilder
         {
@@ -222,7 +258,8 @@ namespace Lukbes.CommandLineParser
 
             /// <summary>
             /// Add a handler that gets called if the specified combo of <paramref name="arguments"/> is provided. <br/>
-            /// Gets called if and only if every given argument in <paramref name="arguments"/> has a value 
+            /// Gets called if and only if every given argument in <paramref name="arguments"/> has a value <br/>
+            /// If <paramref name="arguments"/> is empty, the handler will always be called after parsing
             /// </summary>
             /// <param name="handler">The function that's called if the combo of arguments is provided</param>
             /// <param name="arguments">the arguments that should be provided</param>
@@ -242,11 +279,7 @@ namespace Lukbes.CommandLineParser
             public CommandLineParserBuilder Handler(Delegate handler, params IArgument[] arguments)
             {
                 var parameters = handler.Method.GetParameters();
-
-                if (parameters.Length is 0)
-                {
-                    throw new ArgumentException($"Error: Handler method must have at least one parameter.");
-                }
+                
                 if (parameters.Length != arguments.Length)
                 {
                     throw new ArgumentException($"Error: The number of arguments in the handler does not match the number of arguments provided. Expected: {parameters.Length}, Actual: {arguments.Length}");
@@ -275,8 +308,9 @@ namespace Lukbes.CommandLineParser
             /// <exception cref="BuilderPropertyNullOrEmptyException{T}"></exception>
             public CommandLineParser Build()
             {
-                _parser.Extractor??= new StandardValuesExtractor();
+                _parser.Extractor ??= new StandardValuesExtractor();
                 BuilderPropertyNullOrEmptyException<HashSet<IArgument>>.ThrowIfNullOrEmpty(nameof(_parser._arguments), _parser._arguments);
+                _parser.HelpArg ??= DEFAULT_HELP_ARG;
                 return _parser;
             }
         }

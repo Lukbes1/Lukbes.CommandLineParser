@@ -17,7 +17,6 @@ public interface IArgument
     /// </summary>
     object? Value { get; }
     
-    
     /// <summary>
     /// The underlying type of the Value
     /// </summary>
@@ -27,21 +26,6 @@ public interface IArgument
     /// Unique identifier with short and long name
     /// </summary>
     ArgumentIdentifier Identifier { get; }
-    
-    /// <summary>
-    /// The description for the argument
-    /// </summary>
-    string? Description { get; }
-    
-    /// <summary>
-    /// True if this argument is required, false otherwise
-    /// </summary>
-    bool IsRequired { get; }
-    
-    /// <summary>
-    /// Dependencies for this argument 
-    /// </summary>
-    List<IDependency> Dependencies { get; }
     
     /// <summary>
     /// Applies the converter and the ruleset onto the value.

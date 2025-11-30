@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
-public class CharConverter : IConverter<char>
+public sealed class CharConverter : IConverter<char>
 {
     public string? TryConvert(string? value, out char result)
     {

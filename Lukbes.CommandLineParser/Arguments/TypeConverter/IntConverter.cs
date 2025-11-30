@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
-public class IntConverter : IConverter<int>
+public sealed class IntConverter : IConverter<int>
 {
     public string? TryConvert(string? value, out int result)
     {

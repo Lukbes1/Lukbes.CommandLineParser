@@ -2,7 +2,7 @@
 
 namespace Lukbes.CommandLineParser.Arguments;
 
-public class ArgumentRequiredException<T>(Argument<T> argument) : Exception(CreateMessage(argument))
+public sealed class CommandLineArgumentRequiredException<T>(Argument<T> argument) : CommandLineArgumentException(CreateMessage(argument))
 {
     public static string CreateMessage(Argument<T> argument)
     {

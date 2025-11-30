@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
-public class BoolConverter : IConverter<bool>
+public sealed class BoolConverter : IConverter<bool>
 {
     public string? TryConvert(string? value, out bool result)
     {

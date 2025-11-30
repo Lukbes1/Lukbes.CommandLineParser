@@ -5,7 +5,7 @@
 /// </summary>
 /// <param name="shortIdentifier"></param>
 /// <param name="longIdentifier"></param>
-public class ArgumentIdentifier(string? shortIdentifier = null, string? longIdentifier = null)
+public sealed class ArgumentIdentifier(string? shortIdentifier = null, string? longIdentifier = null)
 {
     public string? ShortIdentifier = shortIdentifier;
     public string? LongIdentifier = longIdentifier;

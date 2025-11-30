@@ -3,7 +3,7 @@
 /// <summary>
 /// Checks if the <see cref="Argument{T}"/> of type string is an existing File via <see cref="File.Exists"/>
 /// </summary>
-public class ExistingFileRule : IRule<string>
+public sealed class ExistingFileRule : IRule<string>
 {
     public string? Validate(Argument<string> argument)
     {

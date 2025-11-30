@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments;
 
-public class ArgumentExtractionException(ArgumentIdentifier identifier, object? expected, object? actual) : Exception(CreateMessage(identifier, expected, actual))
+public sealed class CommandLineArgumentExtractionException(ArgumentIdentifier identifier, object? expected, object? actual) : CommandLineArgumentException(CreateMessage(identifier, expected, actual))
 {
 
 

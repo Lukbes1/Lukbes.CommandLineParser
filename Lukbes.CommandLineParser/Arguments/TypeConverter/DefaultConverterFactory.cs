@@ -32,12 +32,23 @@ public static class DefaultConverterFactory
     }
 
     /// <summary>
-    /// Add a new Default converter. The <paramref name="converter"/> will be chosen, if the type of the <see cref="Argument{T}"/> matches <typeparamref name="T"/> and no other Converter is found
+    /// Add a new Default converter. The <paramref name="converter"/> will be chosen, if the type of the <see cref="Argument{T}"/> matches <typeparamref name="T"/> and no other Converter is found <br/>
     /// </summary>
     /// <param name="converter"></param>
     /// <typeparam name="T"></typeparam>
-    public static void Add<T>(IConverter<T> converter)
+    public static bool TryAdd<T>(IConverter<T> converter)
     {
-        _converters.Add(typeof(T), converter);   
+       return _converters.TryAdd(typeof(T), converter);   
+    }
+
+    /// <summary>
+    /// Removes the predefined converter of type <paramref name="converterType"/> if it exists.
+    /// </summary>
+    /// <param name="converterType"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns>True if existing converter was deleted, false otherwise</returns>
+    public static bool TryRemove<T>(Type converterType)
+    {
+        return _converters.Remove(converterType);
     }
 }

@@ -20,7 +20,7 @@ public class Argument<T> : IArgument
     
     public bool HasValue { get; private set; }
 
-    private T defaultValue;
+    public T DefaultValue { get; private set; }
     
     public bool HasDefaultValue { get; private set; }
     
@@ -29,9 +29,10 @@ public class Argument<T> : IArgument
     public string? Description { get; private set; }
     
     public bool IsRequired { get; private set; }
-
-    public List<IDependency> Dependencies { get; private set; } = new();
+    
     public IConverter<T>? Converter { get; private set; }
+    
+    private readonly List<IDependency> _dependencies = new();
 
     private readonly HashSet<IRule<T>> _rules = new();
     
@@ -67,8 +68,8 @@ public class Argument<T> : IArgument
         Converter = other.Converter;
         Description = other.Description;
         _rules = other._rules;
-        Dependencies = other.Dependencies;
-        defaultValue = other.defaultValue;
+        _dependencies = other._dependencies;
+        DefaultValue = other.DefaultValue;
     }
     
     public List<string> Apply(string? value)
@@ -81,9 +82,9 @@ public class Argument<T> : IArgument
             {
                 if (CommandLineParser.WithExceptions)
                 {
-                    throw new ArgumentRequiredException<T>(this);
+                    throw new CommandLineArgumentRequiredException<T>(this);
                 } 
-                errors.Add(ArgumentRequiredException<T>.CreateMessage(this));
+                errors.Add(CommandLineArgumentRequiredException<T>.CreateMessage(this));
                 return errors;
             }
 
@@ -95,14 +96,14 @@ public class Argument<T> : IArgument
         }
         
         string? convertError = Converter!.TryConvert(value, out var result);
-        if (convertError is not null && defaultValue is not null)
+        if (convertError is not null && DefaultValue is not null)
         {
             HasValue = false;
             if (CommandLineParser.WithExceptions)
             {
-                throw new ArgumentConvertException<T>(Identifier, value!, convertError);
+                throw new CommandLineArgumentConvertException<T>(Identifier, value!, convertError);
             }
-            errors.Add(ArgumentConvertException<T>.CreateMessage(Identifier, value!, convertError));
+            errors.Add(CommandLineArgumentConvertException<T>.CreateMessage(Identifier, value!, convertError));
         }
         else
         {
@@ -115,9 +116,9 @@ public class Argument<T> : IArgument
                 {
                     if (CommandLineParser.WithExceptions)
                     {
-                        throw new ArgumentRuleException(Identifier, value!, error);
+                        throw new CommandLineArgumentRuleException(Identifier, value!, error);
                     }
-                    errors.Add(ArgumentRuleException.CreateMessage(Identifier, value!, error));
+                    errors.Add(CommandLineArgumentRuleException.CreateMessage(Identifier, value!, error));
                 }
             }
         }
@@ -127,20 +128,20 @@ public class Argument<T> : IArgument
 
     public List<string> ValidateDependencies(HashSet<IArgument> allOtherArgs)
     {
-        if (Dependencies.Count == 0)
+        if (_dependencies.Count == 0)
         {
             return [];
         }
         List<string> result = new();
 
-        foreach (var dependency in Dependencies)
+        foreach (var dependency in _dependencies)
         {
             List<string> dependencyErrors = dependency.Check(this, allOtherArgs);
             if (dependencyErrors.Count > 0)
             {
                 if (CommandLineParser.WithExceptions)
                 {
-                    throw new ArgumentDependencyException(dependencyErrors[0]); 
+                    throw new CommandLineArgumentDependencyException(dependencyErrors[0]); 
                 }
 
                 foreach (var error in dependencyErrors)
@@ -174,13 +175,12 @@ public class Argument<T> : IArgument
     /// Gives back a string that is a standard way of writing arguments:<br/>
     /// optional -> [-a, --arg]: int | My Description 
     /// required -> -a, --arg: string | My other Description
-    /// 
     /// </summary>
     /// <returns></returns>
     public override string ToString()
     {
         StringBuilder result = new();
-        if (IsRequired)
+        if (!IsRequired)
         {
             result.Append($"[{Identifier}]").Append(' ');
         }
@@ -189,14 +189,11 @@ public class Argument<T> : IArgument
             result.Append(Identifier).Append(' ');
         }
 
-        result.Append(": ")
-            .Append(typeof(T).Name)
-            .Append(" | ")
-            .Append(Description);
+        result.Append($": {typeof(T).Name} | {Description}");
 
         if (HasDefaultValue)
         {
-            result.Append($"(Default: {defaultValue})");
+            result.Append($"(Default: {DefaultValue})");
         }
         
         return result.ToString();
@@ -206,17 +203,17 @@ public class Argument<T> : IArgument
     /// <summary>
     /// Used to build an <see cref="Argument{T}"/>
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class ArgumentBuilder<T>
+    /// <typeparam name="TArg"></typeparam>
+    public class ArgumentBuilder<TArg>
     {
-        private readonly Argument<T> _argument = new();
+        private readonly Argument<TArg> _argument = new();
 
         /// <summary>
         /// Sets the <see cref="ArgumentIdentifier"/> of the <see cref="Argument{T}"/>
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> Identifier(ArgumentIdentifier identifier)
+        public ArgumentBuilder<TArg> Identifier(ArgumentIdentifier identifier)
         {
             _argument.Identifier = identifier;
             return this;
@@ -227,7 +224,7 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="shortIdentifier"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> ShortIdentifier(string shortIdentifier)
+        public ArgumentBuilder<TArg> ShortIdentifier(string shortIdentifier)
         {
             _argument.Identifier.ShortIdentifier = shortIdentifier;
             return this;
@@ -238,7 +235,7 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="longIdentifier"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> LongIdentifier(string longIdentifier)
+        public ArgumentBuilder<TArg> LongIdentifier(string longIdentifier)
         {
             _argument.Identifier.LongIdentifier = longIdentifier;
             return this;
@@ -249,7 +246,7 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="description"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> Description(string? description)
+        public ArgumentBuilder<TArg> Description(string? description)
         {
             _argument.Description = description;
             return this;
@@ -259,7 +256,7 @@ public class Argument<T> : IArgument
         /// Sets the  <see cref="Argument{T}"/> to required
         /// </summary>
         /// <returns></returns>
-        public ArgumentBuilder<T> IsRequired()
+        public ArgumentBuilder<TArg> IsRequired()
         {
             _argument.IsRequired = true;
             return this;
@@ -270,9 +267,9 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> DefaultValue(T value)
+        public ArgumentBuilder<TArg> DefaultValue(TArg value)
         {
-            _argument.defaultValue = value;
+            _argument.DefaultValue = value;
             _argument.Value = value;
             _argument.HasDefaultValue = true;
             _argument.HasValue = true;
@@ -284,7 +281,7 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="converter"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> Converter(IConverter<T> converter)
+        public ArgumentBuilder<TArg> Converter(IConverter<TArg> converter)
         {
             _argument.Converter = converter;
             return this;
@@ -295,7 +292,7 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="rule"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> Rule(IRule<T> rule)
+        public ArgumentBuilder<TArg> Rule(IRule<TArg> rule)
         {
             _argument._rules.Add(rule);
             return this;
@@ -308,9 +305,9 @@ public class Argument<T> : IArgument
         /// </summary>
         /// <param name="dependency"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> Dependency(IDependency dependency)
+        public ArgumentBuilder<TArg> Dependency(IDependency dependency)
         {
-            _argument.Dependencies.Add(dependency);
+            _argument._dependencies.Add(dependency);
             return this;
         }
         
@@ -320,9 +317,9 @@ public class Argument<T> : IArgument
         /// <param name="first"></param>
         /// <param name="arguments"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> RequiresAll(IArgument first, params IArgument[] arguments)
+        public ArgumentBuilder<TArg> RequiresAll(IArgument first, params IArgument[] arguments)
         {
-            _argument.Dependencies.Add(new RequiresAll(first, arguments));
+            _argument._dependencies.Add(new RequiresAll(first, arguments));
             return this;
         }
         
@@ -332,9 +329,9 @@ public class Argument<T> : IArgument
         /// <param name="first"></param>
         /// <param name="arguments"></param>
         /// <returns></returns>
-        public ArgumentBuilder<T> RequiresOneOf(IArgument first, params IArgument[] arguments)
+        public ArgumentBuilder<TArg> RequiresOneOf(IArgument first, params IArgument[] arguments)
         {
-            _argument.Dependencies.Add(new RequiresOneOf(first, arguments));
+            _argument._dependencies.Add(new RequiresOneOf(first, arguments));
             return this;
         }
         #endregion
@@ -343,23 +340,21 @@ public class Argument<T> : IArgument
         /// Builds the <see cref="Argument{T}"/> and gives it back.
         /// </summary>
         /// <returns></returns>
-        public Argument<T> Build() 
+        public Argument<TArg> Build() 
         {
-            BuilderPropertyNullOrEmptyException<ArgumentIdentifier>.ThrowIfNullOrEmpty(nameof(_argument.Identifier), _argument.Identifier);
             if (!_argument.Identifier.Validate())
             {
-                throw new ArgumentIdentifierException(_argument.Identifier);
+                throw new CommandLineArgumentIdentifierException(_argument.Identifier);
             }
 
             if (_argument.Converter is null)
             {
-                if (DefaultConverterFactory.TryCreate(out IConverter<T>? converter)) 
+                if (DefaultConverterFactory.TryCreate(out IConverter<TArg>? converter)) 
                 {
                     _argument.Converter = converter;
                 }
-                BuilderPropertyNullOrEmptyException<IConverter<T>>.ThrowIfNullOrEmpty(nameof(_argument.Converter), _argument.Converter);
             }
-            BuilderPropertyNullOrEmptyException<IConverter<T>>.ThrowIfNullOrEmpty(nameof(_argument.Converter), _argument.Converter);
+            BuilderPropertyNullOrEmptyException<IConverter<TArg>>.ThrowIfNullOrEmpty(nameof(_argument.Converter), _argument.Converter);
             return _argument;
         }
         

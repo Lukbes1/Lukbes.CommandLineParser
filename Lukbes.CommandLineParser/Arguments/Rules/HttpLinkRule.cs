@@ -5,7 +5,7 @@ namespace Lukbes.CommandLineParser.Arguments.Rules;
 /// <summary>
 /// Checks if the <see cref="Argument{T}"/> of type string is a valid Httplink File via <see cref="File.Exists"/>
 /// </summary>
-public partial class HttpLinkRule : IRule<string>
+public sealed partial class HttpLinkRule : IRule<string>
 {
     public string? Validate(Argument<string> argument)
     {

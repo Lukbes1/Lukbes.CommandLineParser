@@ -3,7 +3,7 @@
 /// <summary>
 /// If used, checks if the <see cref="Argument{T}"/> it is defined on has a value and then, if true, checks if at least one of the _requiresArgs is provided and has a Value 
 /// </summary>
-public class RequiresOneOf : IDependency
+public sealed class RequiresOneOf : IDependency
 {
     private readonly HashSet<ArgumentIdentifier> _requiresArgs;
     
@@ -15,7 +15,7 @@ public class RequiresOneOf : IDependency
     {
         if (requiresArgs.Count == 0)
         {
-            throw new ArgumentException("You must specify at least one requires");
+            throw new CommandLineArgumentException("You must specify at least one requires");
         }
         _requiresArgs = requiresArgs.Select(a => a.Identifier).ToHashSet();
     }
@@ -46,7 +46,7 @@ public class RequiresOneOf : IDependency
     {
         if (requiresArgs.Count == 0)
         {
-            throw new ArgumentException("You must specify at least one requires");
+            throw new CommandLineArgumentException("You must specify at least one requires");
         }
         _requiresArgs = new(requiresArgs);
     }

@@ -7,7 +7,7 @@ namespace Lukbes.CommandLineParser.Extracting;
 /// Classic Argument format extractor
 /// Extracts the following: -r, --Argumentblah, -r="djdj", -r='something', -something=valuexyz, etc. 
 /// </summary>
-public class StandardValuesExtractor : IValuesExtractor
+public sealed class StandardValuesExtractor : IValuesExtractor
 {
     private static readonly Regex REGEX = new(
         @"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>['""]?[^'""\s]+['""]?))?\s*$",

@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments;
 
-public class ArgumentIdentifierException(ArgumentIdentifier identifier) : Exception(CreateMessage(identifier))
+public sealed class CommandLineArgumentIdentifierException(ArgumentIdentifier identifier) : CommandLineArgumentException(CreateMessage(identifier))
 {
     public static string CreateMessage(ArgumentIdentifier identifier)
     {

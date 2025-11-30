@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
-public class DateTimeConverter : IConverter<DateTime>
+public sealed class DateTimeConverter : IConverter<DateTime>
 {
     public string? TryConvert(string? value, out DateTime result)
     {

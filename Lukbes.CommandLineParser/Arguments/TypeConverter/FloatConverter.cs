@@ -1,6 +1,6 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
-public class FloatConverter : IConverter<float>
+public sealed class FloatConverter : IConverter<float>
 {
     public string? TryConvert(string? value, out float result)
     {

@@ -3,7 +3,7 @@
 /// <summary>
 ///  If used, checks if the <see cref="Argument{T}"/> it is defined on has a value and then, if true, checks if all the _requiresArgs are provided and have a Value 
 /// </summary>
-public class RequiresAll : IDependency
+public sealed class RequiresAll : IDependency
 {
     private readonly HashSet<ArgumentIdentifier> _requiresArgs;
     
@@ -15,7 +15,7 @@ public class RequiresAll : IDependency
     {
         if (requiresArgs.Count == 0)
         {
-            throw new ArgumentException("You must specify at least one requires");
+            throw new CommandLineArgumentException("You must specify at least one requires");
         }
         _requiresArgs = requiresArgs.Select(a => a.Identifier).ToHashSet();
     }
@@ -42,12 +42,12 @@ public class RequiresAll : IDependency
     /// 
     /// </summary>
     /// <param name="requiresArgs">The identifier of the arguments of which all must be present and have a value</param>
-    /// <exception cref="ArgumentException">if requiresArgs is empty</exception>
+    /// <exception cref="CommandLineArgumentException">if requiresArgs is empty</exception>
     public RequiresAll(HashSet<ArgumentIdentifier> requiresArgs)
     {
         if (requiresArgs.Count == 0)
         {
-            throw new ArgumentException("You must specify at least one requires");
+            throw new CommandLineArgumentException("You must specify at least one requires");
         }
         _requiresArgs = new HashSet<ArgumentIdentifier>(requiresArgs);
     }
