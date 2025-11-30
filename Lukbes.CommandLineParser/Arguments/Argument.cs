@@ -75,15 +75,25 @@ public class Argument<T> : IArgument
     {
         List<string> errors = new();
         
-        if (IsRequired && string.IsNullOrEmpty(value))
+        if (string.IsNullOrEmpty(value))
         {
-            if (CommandLineParser.WithExceptions)
+            if (IsRequired)
             {
-                throw new ArgumentRequiredException<T>(this);
-            } 
-            errors.Add(ArgumentRequiredException<T>.CreateMessage(this));
-        }
+                if (CommandLineParser.WithExceptions)
+                {
+                    throw new ArgumentRequiredException<T>(this);
+                } 
+                errors.Add(ArgumentRequiredException<T>.CreateMessage(this));
+                return errors;
+            }
 
+            if (!HasDefaultValue)
+            {
+                HasValue = false;
+            }
+            return []; 
+        }
+        
         string? convertError = Converter!.TryConvert(value, out var result);
         if (convertError is not null && defaultValue is not null)
         {

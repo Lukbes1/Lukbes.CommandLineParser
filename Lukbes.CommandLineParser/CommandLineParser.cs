@@ -51,9 +51,9 @@ namespace Lukbes.CommandLineParser
             List<string> errors = new();
             var extractedValues = Extractor!.Extract(args); //Extract
             errors.AddRange(extractedValues.errors);
-            ApplyValuesAndRules(extractedValues, errors);
+            ApplyValuesAndRules(extractedValues.identifierAndValues, errors);
             ValidateDependencies(errors);
-            if (errors.Any())
+            if (errors.Count > 0)
             {
                 return errors;
             }
@@ -61,6 +61,10 @@ namespace Lukbes.CommandLineParser
             {
                 try
                 {
+                    if (!handlerEntry.Value.All(x => x.HasValue))
+                    {
+                        continue;
+                    }
                     object?[] values = handlerEntry.Value.Select(a => a.Value).ToArray();
                     handlerEntry.Key.DynamicInvoke(values);
                 }
@@ -77,21 +81,24 @@ namespace Lukbes.CommandLineParser
         }
 
         private void ApplyValuesAndRules(
-            (Dictionary<ArgumentIdentifier, string?> identifierAndValues, List<string> errors) extractedValues, List<string> errors)
+            Dictionary<ArgumentIdentifier, string?> extractedValues, List<string> errors)
         {
-            foreach (var extractedEntry in extractedValues.identifierAndValues) //Apply Values and Rules
+            foreach (var providedArg in extractedValues.Keys) //Checks if provided arguments are defined
             {
-                IArgument? foundArgument = _arguments.FirstOrDefault(x => x.Identifier.Equals(extractedEntry.Key)); //Only the short OR long version has to match
-                if (foundArgument is null)
+                if (!_arguments.Any(a => a.Identifier.Equals(providedArg)))
                 {
                     if (WithExceptions)
                     {
-                        throw new ArgumentDoesNotExistException(extractedEntry.Key);
+                        throw new ArgumentDoesNotExistException(providedArg);
                     }
-                    errors.Add(ArgumentDoesNotExistException.CreateMessage(extractedEntry.Key));
-                    continue;
+                    errors.Add(ArgumentDoesNotExistException.CreateMessage(providedArg));
                 }
-                var applyErrors = foundArgument.Apply(extractedEntry.Value);
+               
+            }
+            foreach (var argument in _arguments)
+            {
+                var foundArgumentPair = extractedValues.FirstOrDefault(x => x.Key.Equals(argument.Identifier));
+                var applyErrors = argument.Apply(foundArgumentPair.Value);
                 errors.AddRange(applyErrors);
             }
         }
@@ -214,10 +221,22 @@ namespace Lukbes.CommandLineParser
             }
 
             /// <summary>
-            /// Add a handler that gets called if the specified combo of <paramref name="arguments"/> is provided
+            /// Add a handler that gets called if the specified combo of <paramref name="arguments"/> is provided. <br/>
+            /// Gets called if and only if every given argument in <paramref name="arguments"/> has a value 
             /// </summary>
-            /// <param name="handler">The function thats called if the combo of arguments is provided</param>
+            /// <param name="handler">The function that's called if the combo of arguments is provided</param>
             /// <param name="arguments">the arguments that should be provided</param>
+            /// <example>
+            /// The following code takes in 3 Arguments and is only called if Url-, audio- and videoArgument HasValue returns true 
+            /// <code>
+            /// builder.Handler((string url, bool audio, bool video) =>
+            /// {
+            ///      Console.WriteLine($"Url: {url}");
+            ///     Console.WriteLine($"Audio: {audio}");
+            ///     Console.WriteLine($"Video: {video}");
+            /// }, urlArgument,  audioArgument, videoArgument);
+            /// </code>
+            /// </example>
             /// <returns></returns>
             /// <exception cref="InvalidOperationException"></exception>
             public CommandLineParserBuilder Handler(Delegate handler, params IArgument[] arguments)

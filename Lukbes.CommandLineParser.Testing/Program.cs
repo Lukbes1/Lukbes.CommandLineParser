@@ -44,12 +44,15 @@ namespace Lukbes.CommandLineParser.Testing
             var audioArgument = new Argument<bool>(builder =>
             {
                 builder.Identifier(new("a", "audio"));
+                builder.DefaultValue(true);
                 return builder.Build();
             });
+            
             
             var videoArgument = new Argument<bool>(builder =>
             {
                 builder.ShortIdentifier("v");
+                builder.DefaultValue(true);
                 builder.LongIdentifier("video");
                 return builder.Build();
             });
@@ -60,7 +63,6 @@ namespace Lukbes.CommandLineParser.Testing
                 builder.IsRequired();
                 builder.Description("The youtube link");
                 builder.Rule(new HttpLinkRule());
-                builder.RequiresAll(audioArgument);
                 return builder.Build();
             });
 
