@@ -13,7 +13,7 @@ namespace Lukbes.CommandLineParser
 
         public IValuesExtractor? Extractor { get; private set; }
 
-        public Dictionary<Delegate, IArgument[]> ArgumentHandlers { get; private set; } = [];
+        public Dictionary<Delegate, (IArgument[] Arguments, bool Allrequired)> ArgumentHandlers { get; private set; } = [];
         
         public IArgument? HelpArg { get; private set; }
         
@@ -49,14 +49,21 @@ namespace Lukbes.CommandLineParser
             ArgumentHandlers = other.ArgumentHandlers;
         }
         
-        public List<string> Parse(string[] args)
+        /// <summary>
+        /// Main entry of Parsing. Parses the <paramref name="args"/>, fills all internal arguments with values and checks rules and dependencies. <br/>
+        /// Calls every provided handler if conditions met.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        /// <exception cref="ParsingException"></exception>
+        /// <exception cref="CommandLineArgumentException"></exception>
+        public async Task<List<string>> ParseAsync(string[] args)
         {
             List<string> errors = new();
             var extractedValues = Extractor!.Extract(args); 
             errors.AddRange(extractedValues.errors);
-            //Stop early on Help:
             var hasHelpArg = extractedValues.identifierAndValues.Any(a => a.Key.Equals(HelpArg!.Identifier));
-            if (hasHelpArg)
+            if (hasHelpArg) //Stop early on Help:
             {
                 PrintHelp();
                 return errors;
@@ -71,18 +78,22 @@ namespace Lukbes.CommandLineParser
             {
                 try
                 {
-                    if (handlerEntry.Value.Length == 0)
+                    if (handlerEntry.Value.Arguments.Length == 0)
                     {
                         handlerEntry.Key.DynamicInvoke();
                     }
                     else
                     {
-                        if (!handlerEntry.Value.All(x => x.HasValue))
+                        if (handlerEntry.Value.Allrequired && !handlerEntry.Value.Arguments.All(x => x.HasValue))
                         {
                             continue;
                         }
-                        object?[] values = handlerEntry.Value.Select(a => a.Value).ToArray();
-                        handlerEntry.Key.DynamicInvoke(values);
+                        object?[] values = handlerEntry.Value.Arguments.Select(a => a.Value).ToArray();
+                        object? result = handlerEntry.Key.DynamicInvoke(values);
+                        if (result is Task task)
+                        {
+                            await task; 
+                        }
                     }
                 }
                 catch (Exception e)
@@ -96,7 +107,7 @@ namespace Lukbes.CommandLineParser
             }
             return errors;
         }
-
+    
         private void ApplyValuesAndRules(
             Dictionary<ArgumentIdentifier, string?> extractedValues, List<string> errors)
         {
@@ -118,6 +129,7 @@ namespace Lukbes.CommandLineParser
                 errors.AddRange(applyErrors);
             }
         }
+        
         private void ValidateDependencies(List<string> errors)
         {
             foreach (var argument in _arguments) 
@@ -182,6 +194,10 @@ namespace Lukbes.CommandLineParser
             return error;
         }
         
+        /// <summary>
+        /// Get the help string for this parser 
+        /// </summary>
+        /// <returns></returns>
         public string GetHelpString()
         {
             var result = new StringBuilder();
@@ -228,6 +244,10 @@ namespace Lukbes.CommandLineParser
                 BuilderPropertyNullOrEmptyException<IArgument[]>.ThrowIfNullOrEmpty(nameof(arguments), arguments);
                 foreach (var argument in arguments)
                 {
+                    if (_parser._arguments.Any(a => a.Identifier.Equals(argument.Identifier)))
+                    {
+                        throw new CommandLineArgumentUniqueException(argument);
+                    }
                     _parser._arguments.Add(argument);
                 }
                 return this;
@@ -262,6 +282,7 @@ namespace Lukbes.CommandLineParser
             /// If <paramref name="arguments"/> is empty, the handler will always be called after parsing
             /// </summary>
             /// <param name="handler">The function that's called if the combo of arguments is provided</param>
+            /// <param name="allRequired">If all args should have values. If true and any arg has no value, handler wont be called</param>
             /// <param name="arguments">the arguments that should be provided</param>
             /// <example>
             /// The following code takes in 3 Arguments and is only called if Url-, audio- and videoArgument HasValue returns true 
@@ -276,7 +297,7 @@ namespace Lukbes.CommandLineParser
             /// </example>
             /// <returns></returns>
             /// <exception cref="InvalidOperationException"></exception>
-            public CommandLineParserBuilder Handler(Delegate handler, params IArgument[] arguments)
+            public CommandLineParserBuilder Handler(Delegate handler, bool allRequired = false, params IArgument[] arguments)
             {
                 var parameters = handler.Method.GetParameters();
                 
@@ -287,18 +308,32 @@ namespace Lukbes.CommandLineParser
                 
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    var expectedType = parameters[i].ParameterType;
+                    var expected = parameters[i].ParameterType;
+                    var actual = arguments[i].ValueType;
                     var argument = arguments[i];
 
-                    if (arguments[i].ValueType != expectedType)
+                    if (!IsCompatible(expected, actual))
                     {
                         throw new ArgumentException(
-                            $"Error: The type of {argument.Identifier} does not match expected {expectedType} type. Actual: {argument.ValueType}");
+                            $"Error: The type of {argument.Identifier} does not match expected {expected} type. Actual: {actual}");
                     }
                 }
                 
-                _parser.ArgumentHandlers.Add(handler, arguments);
+                _parser.ArgumentHandlers.Add(handler, (arguments, allRequired));
                 return this;
+            }
+            
+            private static Type UnwrapNullable(Type type)
+            {
+                return Nullable.GetUnderlyingType(type) ?? type;
+            }
+            
+            private static bool IsCompatible(Type expected, Type actual)
+            {
+                expected = UnwrapNullable(expected);
+                actual = UnwrapNullable(actual);
+
+                return expected == actual;
             }
 
             /// <summary>

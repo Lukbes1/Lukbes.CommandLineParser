@@ -36,7 +36,7 @@ public interface IArgument
     List<string> Apply(string? value);
     
     /// <summary>
-    /// Validates the argument by checking its dependencies. This process happens after <see cref="Apply"/>
+    /// Validates the argument by checking its dependencies. This process usually happens after <see cref="Apply"/>
     /// </summary>
     /// <param name="allOtherArgs">All other args except this</param>
     /// <returns>empty if successfully, list of errors otherwise</returns>

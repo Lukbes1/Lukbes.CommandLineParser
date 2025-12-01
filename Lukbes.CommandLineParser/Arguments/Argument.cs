@@ -12,6 +12,9 @@ namespace Lukbes.CommandLineParser.Arguments;
 /// <typeparam name="T">The type of the Arguments supposed value</typeparam>
 public class Argument<T> : IArgument
 {
+    /// <summary>
+    /// The Value of the argument
+    /// </summary>
     public T? Value { get; private set; } = default;
 
     object? IArgument.Value => Value;
@@ -19,8 +22,8 @@ public class Argument<T> : IArgument
     public Type ValueType => typeof(T);
     
     public bool HasValue { get; private set; }
-
-    public T DefaultValue { get; private set; }
+    
+    public T? DefaultValue { get; private set; }
     
     public bool HasDefaultValue { get; private set; }
     
@@ -72,6 +75,14 @@ public class Argument<T> : IArgument
         DefaultValue = other.DefaultValue;
     }
     
+    /// <summary>
+    /// <inheritdoc cref="IArgument.Apply"/>
+    /// </summary>
+    /// <param name="value"><inheritdoc cref="IArgument.Apply"/></param>
+    /// <returns> <inheritdoc cref="IArgument.Apply"/></returns>
+    /// <exception cref="CommandLineArgumentRequiredException{T}">If string is null or empty and this IsRequired</exception>
+    /// <exception cref="CommandLineArgumentConvertException{T}">If <paramref name="value"/> could not be converted to <see cref="T"/></exception>
+    /// <exception cref="CommandLineArgumentRuleException">If a Rule failed</exception>
     public List<string> Apply(string? value)
     {
         List<string> errors = new();
@@ -96,18 +107,21 @@ public class Argument<T> : IArgument
         }
         
         string? convertError = Converter!.TryConvert(value, out var result);
-        if (convertError is not null && DefaultValue is not null)
+        if (!string.IsNullOrEmpty(convertError))
+        {
+            errors.Add(CommandLineArgumentConvertException<T>.CreateMessage(Identifier, value!, convertError));
+        }
+        if (convertError is not null && DefaultValue is null)
         {
             HasValue = false;
             if (CommandLineParser.WithExceptions)
             {
                 throw new CommandLineArgumentConvertException<T>(Identifier, value!, convertError);
             }
-            errors.Add(CommandLineArgumentConvertException<T>.CreateMessage(Identifier, value!, convertError));
         }
         else
         {
-            Value = result!;
+            Value = result ?? DefaultValue;
             HasValue = true;
             foreach (var rule in _rules)
             {
@@ -125,7 +139,12 @@ public class Argument<T> : IArgument
         return errors;
     }
     
-
+    /// <summary>
+    /// <inheritdoc cref="IArgument.ValidateDependencies"/>
+    /// </summary>
+    /// <param name="allOtherArgs"><inheritdoc cref="IArgument.ValidateDependencies"/></param>
+    /// <returns><inheritdoc cref="IArgument.ValidateDependencies"/></returns>
+    /// <exception cref="CommandLineArgumentDependencyException">If a dependency fails</exception>
     public List<string> ValidateDependencies(HashSet<IArgument> allOtherArgs)
     {
         if (_dependencies.Count == 0)
@@ -189,7 +208,7 @@ public class Argument<T> : IArgument
             result.Append(Identifier).Append(' ');
         }
 
-        result.Append($": {typeof(T).Name} | {Description}");
+        result.Append($": {GetFriendlyTypeName(typeof(T))} | {Description} ");
 
         if (HasDefaultValue)
         {
@@ -197,6 +216,27 @@ public class Argument<T> : IArgument
         }
         
         return result.ToString();
+    }
+    
+    public static string GetFriendlyTypeName(Type type)
+    {
+        if (type.IsGenericType)
+        {
+            string typeName = type.Name;
+            int backtickIndex = typeName.IndexOf('`');
+            if (backtickIndex > 0)
+            {
+                typeName = typeName.Substring(0, backtickIndex);
+            }
+              
+
+            string genericArgs = string.Join(", ", type.GetGenericArguments()
+                .Select(GetFriendlyTypeName));
+
+            return $"{typeName}<{genericArgs}>";
+        }
+
+        return type.Name;
     }
 
 
@@ -253,7 +293,7 @@ public class Argument<T> : IArgument
         }
         
         /// <summary>
-        /// Sets the  <see cref="Argument{T}"/> to required
+        /// Sets the <see cref="Argument{T}"/> to required
         /// </summary>
         /// <returns></returns>
         public ArgumentBuilder<TArg> IsRequired()
@@ -336,10 +376,12 @@ public class Argument<T> : IArgument
         }
         #endregion
         
-        /// <summary>
-        /// Builds the <see cref="Argument{T}"/> and gives it back.
-        /// </summary>
-        /// <returns></returns>
+       /// <summary>
+       /// Builds the <see cref="Argument{T}"/> and gives it back.
+       /// </summary>
+       /// <returns><see cref="Argument{TArg}"/></returns>
+       /// <exception cref="CommandLineArgumentIdentifierException">If no Identifier was set</exception>
+       /// <exception cref="BuilderPropertyNullOrEmptyException{T}">If no default converter was found and no explicit converter was set</exception>
         public Argument<TArg> Build() 
         {
             if (!_argument.Identifier.Validate())

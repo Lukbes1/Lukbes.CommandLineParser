@@ -25,14 +25,7 @@ public sealed class StandardValuesExtractor : IValuesExtractor
             var value = match.Groups["value"].Value.Trim('\'', '"');
             if (string.IsNullOrEmpty(value))
             {
-                if (!string.IsNullOrEmpty(key))
-                {
-                    value = "true";
-                }
-                else
-                {
-                    value = null;
-                }
+                value = !string.IsNullOrEmpty(key) ? "true" : null;
             }
 
             ArgumentIdentifier identifier = new(dashType == "-" ? key : null, dashType == "--" ? key : null);
