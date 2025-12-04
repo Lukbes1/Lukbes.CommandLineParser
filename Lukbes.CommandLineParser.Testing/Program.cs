@@ -1,5 +1,6 @@
 ﻿
 using System.Net.NetworkInformation;
+using System.Text.RegularExpressions;
 using Lukbes.CommandLineParser.Arguments;
 using Lukbes.CommandLineParser.Arguments.Rules;
 using Lukbes.CommandLineParser.Arguments.TypeConverter;
@@ -10,8 +11,7 @@ namespace Lukbes.CommandLineParser.Testing
     {
         static async Task Main(string[] args)
         {
-            await Example_MoreComplex(args);
-
+            await Custom_type_example(args);
         }
 
         static async Task Example_PrintName(string[] args)
@@ -42,50 +42,22 @@ namespace Lukbes.CommandLineParser.Testing
         /// <summary>
         /// Custom Rule for boundary checks
         /// </summary>
-        private class IntBetweenXAndY : IRule<int>
+        private class ListCountBetweenXAndY<T> : IRule<List<T>>
         {
             private readonly int _lowerBound;
             private readonly int _upperBound;
 
-            public IntBetweenXAndY(int lowerBound, int upperBound)
+            public ListCountBetweenXAndY(int lowerBound, int upperBound)
             {
                 _lowerBound = lowerBound;
                 _upperBound = upperBound;
             }
-            public string? Validate(Argument<int> argument)
-            {
-                if (argument.Value < _lowerBound || argument.Value > _upperBound)
-                {
-                    return $"Value must be between {_lowerBound} and {_upperBound}";
-                }
-                return null;
-            }
-        }
 
-        private class ListConverter<T>(IConverter<T> itemConverter) : IConverter<IList<T>>
-        {
-            private readonly IConverter<T> _itemConverter = itemConverter;
-
-            public string? TryConvert(string? value, out IList<T>? result)
+            public string? Validate(Argument<List<T>> argument)
             {
-                if (value is null)
+                if (argument.Value!.Count < _lowerBound || argument.Value.Count > _upperBound)
                 {
-                    result = [];
-                    return null;
-                }
-                IList<T> items = new List<T>();
-                result = items;
-                foreach (var item in value.Split(","))
-                {
-                    var convertError = _itemConverter.TryConvert(item, out T? itemResult);
-                    if (convertError is null)
-                    {
-                        items.Add(itemResult);
-                    }
-                    else
-                    {
-                        return convertError;
-                    }
+                    return $"Count of list must be between {_lowerBound} and {_upperBound}";
                 }
 
                 return null;
@@ -99,59 +71,15 @@ namespace Lukbes.CommandLineParser.Testing
                 .IsRequired()
                 .Build();
 
-            var intervalsArg = Argument<IList<int>>.Builder()
+            var intervalsArg = Argument<List<int>>.Builder()
                 .Identifier(new("i", "Intervals"))
                 .Description("The intervals to wait between each reattempt in ms")
-                .Converter(new ListConverter<int>(new IntConverter())) //Custom Converter for IList
-                .Build();
-            
-            var reattemptTimesArg= Argument<int>.Builder()
-                .Identifier(new("r", "ReattemptTimes"))
-                .Description("The times the request should be reattempted")
-                .RequiresAll(intervalsArg)
-                .Rule(new IntBetweenXAndY(0,3)) //Custom Boundary Checker
+                .Rule(new ListCountBetweenXAndY<int>(0,3)) //new Rule
                 .Build();
             
             var parser = CommandLineParser.Builder()
-                .Arguments(urlArg, reattemptTimesArg, intervalsArg)
-                .Handler(async (string url, int reattemptTimes, IList<int>? intervals) =>
-                {
-                    int count = 0;
-                    int maxRetries = (reattemptTimes == 0 ? intervals?.Count : 1) ?? 1;
-                    using var ping = new Ping();
-
-                    PingReply? reply;
-                    do
-                    {
-                        try
-                        {
-                            reply = await ping.SendPingAsync(url, 1000); // 1 sec timeout
-                            if (reply.Status == IPStatus.Success)
-                            {
-                                Console.WriteLine($"Success: {reply.RoundtripTime}ms");
-                                break; // exit loop
-                            }
-                          
-                        }
-                        catch (Exception e)
-                        {
-                        }
-                        Console.WriteLine($"Failed");
-                        
-                        // Wait if intervals are provided
-                        if (intervals is not null && intervals.Count > 0 && count < intervals.Count)
-                        {
-                            var waitTime = intervals[count];
-                            Console.WriteLine($"Waiting for {waitTime}ms");
-                            await Task.Delay(waitTime);
-                        }
-                        if (count < maxRetries - 1)
-                        {
-                            Console.WriteLine("Retrying...");
-                        }
-                        count++;
-                    } while (count < maxRetries);
-                }, allRequired:false, urlArg, reattemptTimesArg, intervalsArg)
+                .Arguments(urlArg, intervalsArg)
+                .Handler(PingWithRetriesAsync, allRequired:false, urlArg, intervalsArg)
                 .Build();
 
             var errors = await parser.ParseAsync(args);
@@ -159,6 +87,116 @@ namespace Lukbes.CommandLineParser.Testing
             {
                 Console.WriteLine(error);
             }
+        }
+        
+        public static async Task PingWithRetriesAsync(string url, List<int>? intervals)
+        {
+            int maxTries = intervals?.Count ?? 1; // if no intervals -> single try
+            using var ping = new Ping();
+
+            for (int attempt = 1; attempt <= maxTries; attempt++)
+            {
+                int index = attempt - 1;
+                int timeout = intervals != null ? intervals[index] : 1000;
+
+                Console.WriteLine($"Attempt {attempt}/{maxTries}: sending ping (timeout {timeout}ms)");
+
+                try
+                {
+                    PingReply reply = await ping.SendPingAsync(url, timeout);
+
+                    if (reply.Status == IPStatus.Success)
+                    {
+                        Console.WriteLine($"Success: {reply.RoundtripTime}ms");
+                        return;
+                    }
+                     Console.WriteLine($"Attempt {attempt} failed: {reply.Status}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ping error on attempt {attempt}: {ex.Message}");
+                }
+
+                // If more tries remain, wait; otherwise report final failure
+                if (attempt < maxTries)
+                {
+                    int delay = intervals![index];
+                    Console.WriteLine($"Retry {attempt}/{maxTries}: waiting {delay}ms before next try...");
+                    await Task.Delay(delay);
+                }
+                else
+                {
+                    Console.WriteLine("Failed all retries.");
+                }
+            }
+        }
+
+
+        private readonly struct CustomPoint(int X, int Y)
+        {
+            public override string ToString()
+            {
+                return "{" + X + ", " + Y + "}"; 
+            }
+        }
+
+        private class CustomPointConverter : IConverter<CustomPoint>
+        {
+            public string? TryConvert(string? value, out CustomPoint result)
+            {
+                result = default;
+                if (string.IsNullOrEmpty(value))
+                {
+                    return "Point must not be null";
+                }
+
+                value = value.Trim();
+                var values = value.Split(",");
+                if (values.Length != 2)
+                {
+                    return "There must be exactly two values";
+                }
+                bool successX = int.TryParse(values[0], out var x);
+                if (!successX)
+                {
+                    return "X value was not valid! Actual: " + values[0];
+                }
+                
+                bool successY = int.TryParse(values[1], out var y);
+                if (!successY)
+                {
+                    return "Y value was not valid! Actual: " + values[1];
+                }
+
+                result = new CustomPoint(x, y);
+                return null;
+            }
+        }
+        
+        public static async Task Custom_type_example(string[] args)
+        {
+            /* var pointArg = Argument<CustomPoint>.Builder()
+                .Identifier(new("p", "Point"))
+                .Description("The coordinate of the block")
+                .Build();
+                Would not work, because you have to specify a converter for this type
+                Certain types are predefined, see DefaultConverterFactory.GetTypes() 
+            */
+            
+            var pointArg = Argument<CustomPoint>.Builder()
+                .Identifier(new("p", "Point"))
+                .Description("The coordinate of the block")
+                .Converter(new CustomPointConverter())
+                .Build();
+
+            var parser = CommandLineParser.Builder().Arguments(pointArg).Build();
+            var errors = await parser.ParseAsync(args);
+            foreach (var error in errors)
+            {
+                Console.WriteLine(error);
+            }
+
+            Console.WriteLine("The Point: " + pointArg.Value);
         }
         
         

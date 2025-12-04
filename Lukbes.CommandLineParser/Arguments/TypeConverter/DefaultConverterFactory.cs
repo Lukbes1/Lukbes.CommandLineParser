@@ -1,5 +1,8 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments.TypeConverter;
 
+/// <summary>
+/// The factory for creating IConverters so you don't need to specify them
+/// </summary>
 public static class DefaultConverterFactory
 {
     private static readonly Dictionary<Type, object> _converters = new()
@@ -50,5 +53,19 @@ public static class DefaultConverterFactory
     public static bool TryRemove<T>(Type converterType)
     {
         return _converters.Remove(converterType);
+    }
+    
+    /// <summary>
+    /// Get a new List Converter of type <paramref name="T"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns>The <see cref="ListConverter{T}"/> of type <paramref name="T"/></returns>
+    public static ListConverter<T>? CreateListConverter<T>()
+    {
+        if (!_converters.TryGetValue(typeof(T), out var converter))
+        {
+            return null;
+        }
+        return new ListConverter<T>(converter as IConverter<T>);
     }
 }

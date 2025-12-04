@@ -7,7 +7,8 @@
 public interface IRule<T>
 {
     /// <summary>
-    /// Validates the <see cref="Argument{T}"/> 
+    /// Validates the <see cref="Argument{T}"/>
+    /// This is only called if <see cref="Argument{T}"/> HasValue is true
     /// </summary>
     /// <param name="argument">The argument to be validated</param>
     /// <returns>Null if successfully, errormessage otherwise</returns>

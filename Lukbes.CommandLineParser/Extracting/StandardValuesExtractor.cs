@@ -10,7 +10,7 @@ namespace Lukbes.CommandLineParser.Extracting;
 public sealed class StandardValuesExtractor : IValuesExtractor
 {
     private static readonly Regex REGEX = new(
-        @"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>['""]?[^'""\s]+['""]?))?\s*$",
+        @"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>['""]?[^'""\s]*['""]?))?\s*$",
         RegexOptions.Compiled);
     public (Dictionary<ArgumentIdentifier, string?> identifierAndValues, List<string> errors) Extract(string[] args)
     {

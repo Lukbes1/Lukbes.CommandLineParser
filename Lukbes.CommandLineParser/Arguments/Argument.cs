@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Formats.Tar;
+using System.Net.Security;
 using System.Text;
 using Lukbes.CommandLineParser.Arguments.Dependencies;
 using Lukbes.CommandLineParser.Arguments.Rules;
@@ -324,6 +326,43 @@ public class Argument<T> : IArgument
         public ArgumentBuilder<TArg> Converter(IConverter<TArg> converter)
         {
             _argument.Converter = converter;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the type of the List. <br/>
+        /// Use this method if you want to use default converters of type <typeparamref name="TListItemType"/> <br/>
+        /// Necessary because the Converter can not be automatically infered through the argument Type. <br/>
+        /// </summary>
+        /// <typeparam name="TListItemType"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="CommandLineArgumentConverterException{TListItemType}">If a default converter for <typeparamref name="TListItemType"/> does not exist</exception>
+        public ArgumentBuilder<TArg> Converter<TListItemType>()
+        {
+            var converter = DefaultConverterFactory.CreateListConverter<TListItemType>();
+            if (converter is null)
+            {
+                throw new CommandLineArgumentConverterException<TListItemType>();
+            }
+
+            _argument.Converter = converter as IConverter<TArg>;
+            return this;
+        }
+        
+        /// <summary>
+        /// Set the type of the List. <br/>
+        /// Use this method if you want a custom converter for the <typeparamref name="TListItemType"/> <br/>
+        /// Necessary because the Converter can not be automatically infered through the argument Type.
+        /// </summary>
+        /// <typeparam name="TListItemType"></typeparam>
+        /// <returns></returns>
+        public ArgumentBuilder<TArg> Converter<TListItemType>(IConverter<TListItemType> converter)
+        {
+            if (converter is null)
+            {
+                throw new BuilderPropertyNullOrEmptyException<TArg>(nameof(converter));
+            }
+            _argument.Converter = new ListConverter<TListItemType>(converter) as IConverter<TArg>;
             return this;
         }
         

@@ -267,7 +267,7 @@ namespace Lukbes.CommandLineParser
             }
             
             /// <summary>
-            /// Gives the ability to allow custom formats
+            /// Gives the ability to allow custom formats instead of the usual --arg="" etc. However Help formatting wont change
             /// </summary>
             /// <returns></returns>
             public CommandLineParserBuilder CustomValuesExtractor(IValuesExtractor valueExtractor)
