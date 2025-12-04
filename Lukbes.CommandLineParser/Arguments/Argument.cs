@@ -413,6 +413,18 @@ public class Argument<T> : IArgument
             _argument._dependencies.Add(new RequiresOneOf(first, arguments));
             return this;
         }
+        
+        /// <summary>
+        /// Use, if this arg and the other args should require each other ('bound'). 
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public ArgumentBuilder<TArg> OnlyWith(IArgument first, params IArgument[] arguments)
+        {
+            _argument._dependencies.Add(new OnlyWith(first, arguments));
+            return this;
+        }
         #endregion
         
        /// <summary>

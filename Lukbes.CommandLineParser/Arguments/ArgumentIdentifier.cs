@@ -38,12 +38,12 @@ public sealed class ArgumentIdentifier(string? shortIdentifier = null, string? l
         return $"-{ShortIdentifier}, --{LongIdentifier}";
     }
     
-    protected bool Equals(ArgumentIdentifier other)
+    private bool Equals(ArgumentIdentifier other)
     {
         return (ShortIdentifier is not null && ShortIdentifier == other.ShortIdentifier) || (LongIdentifier is not null && LongIdentifier == other.LongIdentifier);
     }
     
-    protected bool Equals(string other)
+    private bool Equals(string other)
     {
         return (ShortIdentifier is not null && ShortIdentifier == other) || (LongIdentifier is not null && LongIdentifier == other);
     }
@@ -61,6 +61,6 @@ public sealed class ArgumentIdentifier(string? shortIdentifier = null, string? l
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(ShortIdentifier, LongIdentifier);
+        return HashCode.Combine(ShortIdentifier, LongIdentifier); //Not correctly working for equals. Mathematically not possible to have the equals implementation have a hashcode equivalent
     }
 }

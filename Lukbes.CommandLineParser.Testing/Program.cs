@@ -11,7 +11,7 @@ namespace Lukbes.CommandLineParser.Testing
     {
         static async Task Main(string[] args)
         {
-            await Custom_type_example(args);
+            await BindingArgs(args);
         }
 
         static async Task Example_PrintName(string[] args)
@@ -185,6 +185,7 @@ namespace Lukbes.CommandLineParser.Testing
             
             var pointArg = Argument<CustomPoint>.Builder()
                 .Identifier(new("p", "Point"))
+                .IsRequired()
                 .Description("The coordinate of the block")
                 .Converter(new CustomPointConverter())
                 .Build();
@@ -198,7 +199,37 @@ namespace Lukbes.CommandLineParser.Testing
 
             Console.WriteLine("The Point: " + pointArg.Value);
         }
-        
+
+
+        public static async Task BindingArgs(string[] args)
+        {
+            CommandLineParser.WithExceptions = true;
+            var firstNameArg =  Argument<string>.Builder()
+                .Description("The first Name")
+                .ShortIdentifier("f")
+                .Build();
+            
+            var lastName = Argument<string>.Builder()
+                .Description("The Last Name")
+                .OnlyWith(firstNameArg)
+                .ShortIdentifier("l")
+                .Build();
+
+            var parser = CommandLineParser.Builder()
+                .Arguments(firstNameArg, lastName)
+                .Build();
+
+            try
+            {
+                await parser.ParseAsync(args);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+          
+
+        }
         
     }
 }
