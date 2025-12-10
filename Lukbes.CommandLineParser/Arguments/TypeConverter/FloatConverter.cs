@@ -7,7 +7,7 @@ public sealed class FloatConverter : IConverter<float>
         bool hasError = float.TryParse(value, out result);
         if (!hasError)
         {
-            return $"\"{value}\" could not be parsed as a float";
+            return $"'{value}' could not be parsed as a float";
         }
 
         return null;

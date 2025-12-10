@@ -93,7 +93,7 @@ public sealed class RequiresOneOf : IDependency
         string requiredArgs = "[" + string.Join(";", _requiresArgs) + "]";
 
         string errorMessage =
-            $"Error: \"{argument}\" requires any of the following \"{requiredArgs}\"";
+            $"'{argument}' requires any of the following '{requiredArgs}'";
         if (CommandLineParser.WithExceptions)
         {
             throw new DependencyException(errorMessage);

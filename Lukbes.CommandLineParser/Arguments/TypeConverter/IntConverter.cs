@@ -7,7 +7,7 @@ public sealed class IntConverter : IConverter<int>
         bool hasError = int.TryParse(value, out result);
         if (!hasError)
         {
-            return $"\"{value}\" could not be parsed as an integer";
+            return $"'{value}' could not be parsed as an integer";
         }
 
         return null;

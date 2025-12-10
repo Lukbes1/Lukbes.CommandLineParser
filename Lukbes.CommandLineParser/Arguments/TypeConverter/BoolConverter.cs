@@ -7,7 +7,7 @@ public sealed class BoolConverter : IConverter<bool>
         bool success = bool.TryParse(value, out result);
         if (!success)
         {
-            return $"\"{value}\" could not be parsed as a bool";
+            return $"'{value}' could not be parsed as a bool";
         }
 
         return null;

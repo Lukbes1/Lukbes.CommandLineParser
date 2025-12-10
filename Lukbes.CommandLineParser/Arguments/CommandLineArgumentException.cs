@@ -11,10 +11,6 @@ public class CommandLineArgumentException : Exception
     {
     }
 
-    protected CommandLineArgumentException(SerializationInfo info, StreamingContext context) : base(info, context)
-    {
-    }
-
     public CommandLineArgumentException(string? message) : base(message)
     {
     }

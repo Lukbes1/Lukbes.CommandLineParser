@@ -1,10 +1,8 @@
-﻿using System.ComponentModel;
-using System.Formats.Tar;
-using System.Net.Security;
-using System.Text;
+﻿using System.Text;
 using Lukbes.CommandLineParser.Arguments.Dependencies;
 using Lukbes.CommandLineParser.Arguments.Rules;
 using Lukbes.CommandLineParser.Arguments.TypeConverter;
+using Lukbes.CommandLineParser;
 
 namespace Lukbes.CommandLineParser.Arguments;
 
@@ -209,8 +207,8 @@ public class Argument<T> : IArgument
         {
             result.Append(Identifier).Append(' ');
         }
-
-        result.Append($": {GetFriendlyTypeName(typeof(T))} | {Description} ");
+        
+        result.Append($": {typeof(T).GetFriendlyTypeName()} | {Description} ");
 
         if (HasDefaultValue)
         {
@@ -218,27 +216,6 @@ public class Argument<T> : IArgument
         }
         
         return result.ToString();
-    }
-    
-    public static string GetFriendlyTypeName(Type type)
-    {
-        if (type.IsGenericType)
-        {
-            string typeName = type.Name;
-            int backtickIndex = typeName.IndexOf('`');
-            if (backtickIndex > 0)
-            {
-                typeName = typeName.Substring(0, backtickIndex);
-            }
-              
-
-            string genericArgs = string.Join(", ", type.GetGenericArguments()
-                .Select(GetFriendlyTypeName));
-
-            return $"{typeName}<{genericArgs}>";
-        }
-
-        return type.Name;
     }
 
 
@@ -332,12 +309,11 @@ public class Argument<T> : IArgument
         /// <summary>
         /// Set the type of the List. <br/>
         /// Use this method if you want to use default converters of type <typeparamref name="TListItemType"/> <br/>
-        /// Necessary because the Converter can not be automatically infered through the argument Type. <br/>
         /// </summary>
         /// <typeparam name="TListItemType"></typeparam>
         /// <returns></returns>
         /// <exception cref="CommandLineArgumentConverterException{TListItemType}">If a default converter for <typeparamref name="TListItemType"/> does not exist</exception>
-        public ArgumentBuilder<TArg> Converter<TListItemType>()
+        public ArgumentBuilder<TArg> ListTypeConverter<TListItemType>()
         {
             var converter = DefaultConverterFactory.CreateListConverter<TListItemType>();
             if (converter is null)
@@ -352,11 +328,10 @@ public class Argument<T> : IArgument
         /// <summary>
         /// Set the type of the List. <br/>
         /// Use this method if you want a custom converter for the <typeparamref name="TListItemType"/> <br/>
-        /// Necessary because the Converter can not be automatically infered through the argument Type.
         /// </summary>
         /// <typeparam name="TListItemType"></typeparam>
         /// <returns></returns>
-        public ArgumentBuilder<TArg> Converter<TListItemType>(IConverter<TListItemType> converter)
+        public ArgumentBuilder<TArg> ListTypeConverter<TListItemType>(IConverter<TListItemType> converter)
         {
             if (converter is null)
             {
@@ -442,7 +417,7 @@ public class Argument<T> : IArgument
 
             if (_argument.Converter is null)
             {
-                if (DefaultConverterFactory.TryCreate(out IConverter<TArg>? converter)) 
+                if (DefaultConverterFactory.TryGet(out IConverter<TArg>? converter)) 
                 {
                     _argument.Converter = converter;
                 }
@@ -450,6 +425,6 @@ public class Argument<T> : IArgument
             BuilderPropertyNullOrEmptyException<IConverter<TArg>>.ThrowIfNullOrEmpty(nameof(_argument.Converter), _argument.Converter);
             return _argument;
         }
-        
+       
     }
 }

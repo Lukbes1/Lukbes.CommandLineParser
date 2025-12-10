@@ -91,7 +91,7 @@ public sealed class RequiresAll : IDependency
             if (foundArg is null || !foundArg.HasValue)
             {
                  string errorMessage =
-                    $"Error: \"{argument}\" requires \"{requiredArg}\". actual: \"{requiredArg}\" was missing or has no value";
+                    $"'{argument}' requires '{requiredArg}'. actual: '{requiredArg}' was missing or has no value";
                 if (CommandLineParser.WithExceptions)
                 {
                     throw new DependencyException(errorMessage);

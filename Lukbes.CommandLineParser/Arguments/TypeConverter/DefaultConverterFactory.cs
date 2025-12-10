@@ -5,21 +5,28 @@
 /// </summary>
 public static class DefaultConverterFactory
 {
-    private static readonly Dictionary<Type, object> _converters = new()
+    private static readonly Dictionary<Type, Lazy<object>> _converters = new()
     {
-        [typeof(int)] = new IntConverter(),
-        [typeof(double)] = new DoubleConverter(),
-        [typeof(bool)] = new BoolConverter(),
-        [typeof(string)] = new StringConverter(),
-        [typeof(char)] = new CharConverter(),
-        [typeof(float)] = new FloatConverter(),
-        [typeof(DateTime)] = new DateTimeConverter()
+        [typeof(int)] = new Lazy<object>(() => new IntConverter()),
+        [typeof(List<int>)] = new Lazy<object>(() => CreateListConverter<int>()!),
+        [typeof(double)] = new Lazy<object>(() => new DoubleConverter()),
+        [typeof(List<double>)] = new Lazy<object>(() => CreateListConverter<double>()!),
+        [typeof(bool)] = new Lazy<object>(() => new BoolConverter()),
+        [typeof(List<bool>)] = new Lazy<object>(() => CreateListConverter<bool>()!),
+        [typeof(string)] = new Lazy<object>(() => new StringConverter()),
+        [typeof(List<string>)] = new Lazy<object>(() => CreateListConverter<string>()!),
+        [typeof(char)] = new Lazy<object>(() => new CharConverter()),
+        [typeof(List<char>)] = new Lazy<object>(() => CreateListConverter<char>()!),
+        [typeof(float)] = new Lazy<object>(() => new FloatConverter()),
+        [typeof(List<float>)] = new Lazy<object>(() => CreateListConverter<float>()!),
+        [typeof(DateTime)] = new Lazy<object>(() => new DateTimeConverter()),
+        [typeof(List<DateTime>)] = new Lazy<object>(() => CreateListConverter<DateTime>()!),
     };
     
     /// <summary>
     /// Returns all already defined types that have a default Converter
     /// </summary>
-    public static List<Type> GetTypes => _converters.Keys.ToList(); 
+    public static List<Type> Types => _converters.Keys.ToList(); 
 
     /// <summary>
     /// Try creating an <see cref="IConverter{T}"/> from type <typeparamref name="T"/> 
@@ -27,10 +34,15 @@ public static class DefaultConverterFactory
     /// <param name="converter"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns>false if type did not exist, true otherwise</returns>
-    public static bool TryCreate<T>(out IConverter<T>? converter)
+    public static bool TryGet<T>(out IConverter<T>? converter)
     {
         var success =_converters.TryGetValue(typeof(T), out var converterObject);
-        converter = converterObject as IConverter<T>;
+        if (success)
+        {
+            converter = converterObject!.Value as IConverter<T>;
+            return true;
+        }
+        converter = null;
         return success;
     }
 
@@ -41,7 +53,32 @@ public static class DefaultConverterFactory
     /// <typeparam name="T"></typeparam>
     public static bool TryAdd<T>(IConverter<T> converter)
     {
-       return _converters.TryAdd(typeof(T), converter);   
+       return _converters.TryAdd(typeof(T), new Lazy<object>(() => converter));   
+    }
+    
+    /// <summary>
+    /// Add a new Default List converter. If a Converter of Type <paramref name="TListItemType"/> is found, automatically creates a new ListConverter
+    /// </summary>
+    /// <typeparam name="TListItemType"></typeparam>
+    /// <returns>true if could be added, false otherwise</returns>
+    public static bool TryAddList<TListItemType>()
+    {
+        if (!_converters.ContainsKey(typeof(TListItemType)))
+        {
+            return false;
+        }
+        return _converters.TryAdd(typeof(List<TListItemType>), new Lazy<object>(() => CreateListConverter<TListItemType>()!));   
+    }
+    
+    /// <summary>
+    /// Add a new Default List converter
+    /// </summary>
+    /// <param name="converter"></param>
+    /// <typeparam name="TListItemType"></typeparam>
+    /// <returns>true if could be added, false otherwise</returns>
+    public static bool TryAddList<TListItemType>(IConverter<TListItemType> converter)
+    {
+        return _converters.TryAdd(typeof(List<TListItemType>), new Lazy<object>(() => new ListConverter<TListItemType>(converter)));   
     }
 
     /// <summary>
@@ -53,6 +90,14 @@ public static class DefaultConverterFactory
     public static bool TryRemove<T>(Type converterType)
     {
         return _converters.Remove(converterType);
+    }
+
+    /// <summary>
+    /// Clears all Defaults
+    /// </summary>
+    public static void Clear()
+    {
+        _converters.Clear();
     }
     
     /// <summary>
@@ -66,6 +111,6 @@ public static class DefaultConverterFactory
         {
             return null;
         }
-        return new ListConverter<T>(converter as IConverter<T>);
+        return new ListConverter<T>(converter!.Value as IConverter<T>);
     }
 }

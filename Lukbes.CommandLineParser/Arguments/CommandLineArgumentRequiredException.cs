@@ -6,6 +6,6 @@ public sealed class CommandLineArgumentRequiredException<T>(Argument<T> argument
 {
     public static string CreateMessage(Argument<T> argument)
     {
-        return $"Error: \"{argument.Identifier}\" is required but was not provided";
+        return $"'{argument.Identifier}' is required but was not provided";
     }
 }

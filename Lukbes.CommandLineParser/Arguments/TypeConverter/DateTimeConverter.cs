@@ -7,7 +7,7 @@ public sealed class DateTimeConverter : IConverter<DateTime>
         bool hasError =  DateTime.TryParse(value, out result);
         if (!hasError)
         {
-            return $"\"{value}\" could not be parsed as a DateTime";
+            return $"'{value}' could not be parsed as a DateTime";
         }
 
         return null;

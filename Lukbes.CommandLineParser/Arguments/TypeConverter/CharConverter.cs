@@ -7,7 +7,7 @@ public sealed class CharConverter : IConverter<char>
         bool success =  char.TryParse(value, out result);
         if (!success)
         {
-            return $"\"{value}\" could not be parsed as a char";
+            return $"'{value}' could not be parsed as a char";
         }
 
         return null;

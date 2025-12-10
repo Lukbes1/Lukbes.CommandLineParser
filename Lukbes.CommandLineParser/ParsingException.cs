@@ -5,7 +5,7 @@ public class ParsingException(List<string> errors, string[] args) : Exception(Cr
 
     public static string CreateMessage(List<string> errors, string[] args)
     {
-        return $"Error: Parsing \"{args}\" did not work: {FormatErrors(errors)}";
+        return $"Parsing '{args}' did not work: {FormatErrors(errors)}";
     }
     
     private static string FormatErrors(List<string> errors)

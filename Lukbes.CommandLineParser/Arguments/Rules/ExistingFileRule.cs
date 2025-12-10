@@ -7,6 +7,6 @@ public sealed class ExistingFileRule : IRule<string>
 {
     public string? Validate(Argument<string> argument)
     {
-        return File.Exists(argument.Value) ? null : $"File \"{argument.Value}\" does not exist";
+        return File.Exists(argument.Value) ? null : $"File '{argument.Value}' does not exist";
     }
 }

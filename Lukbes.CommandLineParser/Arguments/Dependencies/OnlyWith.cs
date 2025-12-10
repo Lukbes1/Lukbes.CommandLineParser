@@ -91,7 +91,7 @@ public class OnlyWith : IDependency
             if ((foundArg is null || !foundArg.HasValue) && argument.HasValue)
             {
                 string errorMessage =
-                    $"Error: \"{argument.Identifier}\" is bound and thus requires \"{boundArg}\". Actual: \"{boundArg}\" was missing or has no value";
+                    $"'{argument.Identifier}' is bound and thus requires '{boundArg}'. Actual: '{boundArg}' was missing or has no value";
                 if (CommandLineParser.WithExceptions)
                 {
                     throw new DependencyException(errorMessage);
@@ -106,7 +106,7 @@ public class OnlyWith : IDependency
 
         if (argument.HasValue || foundBoundArgs.Count == 0) return result;
         string args =  string.Join(", ", foundBoundArgs.Select(x => x.ToString()));
-        string error = $"{argument.Identifier} is bound to the existing [{args}] but {argument.Identifier} was not present";
+        string error = $"'{argument.Identifier}' is bound to the argument '{args}' but '{argument.Identifier}' was not present";
         if (CommandLineParser.WithExceptions)
         {
             throw new DependencyException(error);

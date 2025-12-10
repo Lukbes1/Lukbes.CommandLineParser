@@ -4,6 +4,6 @@ public sealed class CommandLineArgumentIdentifierException(ArgumentIdentifier id
 {
     public static string CreateMessage(ArgumentIdentifier identifier)
     {
-        return $"Error: The identifier must have at least the short or long version defined. actually: short was \"{(identifier.ShortIdentifier is null ? "null" : "not null")}\" and long was \"{(identifier.LongIdentifier is null ? "null" : "not null")}\"";
+        return $"The identifier must have at least the short or long version defined. actually: short was '{(identifier.ShortIdentifier is null ? "null" : "not null")}' and long was '{(identifier.LongIdentifier is null ? "null" : "not null")}'";
     }
 }

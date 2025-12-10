@@ -5,6 +5,6 @@ public sealed class CommandLineArgumentRuleException(ArgumentIdentifier identifi
     
     public static string CreateMessage(ArgumentIdentifier identifier, string triedValue, string ruleError)
     {
-        return $"Error: rule failed for \"{identifier}\". Tried value: \"{triedValue}\". Rule error: {ruleError}";
+        return $"Rule failed for '{identifier}'. Tried value: '{triedValue}'. Rule: {ruleError}";
     }
 }

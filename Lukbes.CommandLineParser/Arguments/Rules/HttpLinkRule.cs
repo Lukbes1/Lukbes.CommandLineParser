@@ -9,9 +9,9 @@ public sealed partial class HttpLinkRule : IRule<string>
 {
     public string? Validate(Argument<string> argument)
     {
-        return HttpLinkRegex().IsMatch(argument.Value!) ? null : $"The value \"{argument.Value}\" of \"{argument.Identifier}\" was not a http link";
+        return HttpLinkRegex().IsMatch(argument.Value!) ? null : $"The value '{argument.Value}' of '{argument.Identifier}' was not a http link";
     }
 
-    [GeneratedRegex(@"^https?://[^\s/$.?#].[^\s]*$", RegexOptions.IgnoreCase, "de-DE")]
+    [GeneratedRegex(@"^https?://[^\s/$.?#].[^\s]*$", RegexOptions.IgnoreCase)]
     private static partial Regex HttpLinkRegex();
 }

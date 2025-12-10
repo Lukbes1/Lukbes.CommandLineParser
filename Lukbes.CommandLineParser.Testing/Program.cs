@@ -1,7 +1,9 @@
 ﻿
+using System.Diagnostics;
+using System.Globalization;
 using System.Net.NetworkInformation;
-using System.Text.RegularExpressions;
 using Lukbes.CommandLineParser.Arguments;
+using Lukbes.CommandLineParser.Arguments.Dependencies;
 using Lukbes.CommandLineParser.Arguments.Rules;
 using Lukbes.CommandLineParser.Arguments.TypeConverter;
 
@@ -11,12 +13,34 @@ namespace Lukbes.CommandLineParser.Testing
     {
         static async Task Main(string[] args)
         {
-            await BindingArgs(args);
+            try
+            {
+                await BindingArgs(args);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+         
         }
 
+        static async Task List_example(string[] args)
+        {
+            CommandLineParser.WithExceptions = true;
+            var numbersArg = Argument<List<int>>.Builder().LongIdentifier("numbers").Build();
+            
+            var parser = CommandLineParser.Builder().Argument(numbersArg).Build();
+            await parser.ParseAsync(args);
+            foreach (var num in numbersArg.Value!)
+            {
+                Console.WriteLine(num);
+            }
+        }
+        
         static async Task Example_PrintName(string[] args)
         {
             var nameArg = Argument<string>.Builder()
+                .DefaultValue("tom")
                 .Identifier(new("n", "name"))
                 .Build();
             
@@ -132,13 +156,31 @@ namespace Lukbes.CommandLineParser.Testing
         }
 
 
-        private readonly struct CustomPoint(int X, int Y)
+        private readonly struct CustomPoint
         {
+            public readonly int X;
+            public readonly int Y;
+
+            public CustomPoint(int x, int y) => (X,Y) = (x, y);
+
             public override string ToString()
             {
-                return "{" + X + ", " + Y + "}"; 
+                return "{" + X + ", " + Y + "}";
             }
         }
+        
+         private class NonNegativePoints : IRule<List<CustomPoint>>
+         {
+              public string? Validate(Argument<List<CustomPoint>> argument)
+              {
+                  if (argument.Value!.Any(p => p.X < 0 || p.Y < 0))
+                  {
+                      return $"X and Y cannot be negative";
+                  }
+                  return null;
+              }
+         }
+                
 
         private class CustomPointConverter : IConverter<CustomPoint>
         {
@@ -151,7 +193,7 @@ namespace Lukbes.CommandLineParser.Testing
                 }
 
                 value = value.Trim();
-                var values = value.Split(",");
+                var values = value.Split(";");
                 if (values.Length != 2)
                 {
                     return "There must be exactly two values";
@@ -175,6 +217,7 @@ namespace Lukbes.CommandLineParser.Testing
         
         public static async Task Custom_type_example(string[] args)
         {
+            CommandLineParser.WithExceptions = false;
             /* var pointArg = Argument<CustomPoint>.Builder()
                 .Identifier(new("p", "Point"))
                 .Description("The coordinate of the block")
@@ -186,8 +229,8 @@ namespace Lukbes.CommandLineParser.Testing
             var pointArg = Argument<CustomPoint>.Builder()
                 .Identifier(new("p", "Point"))
                 .IsRequired()
-                .Description("The coordinate of the block")
-                .Converter(new CustomPointConverter())
+                .Description("The coordinate of the point")
+                .Converter(new CustomPointConverter()) //<- The custom converter
                 .Build();
 
             var parser = CommandLineParser.Builder().Arguments(pointArg).Build();
@@ -196,40 +239,132 @@ namespace Lukbes.CommandLineParser.Testing
             {
                 Console.WriteLine(error);
             }
-
             Console.WriteLine("The Point: " + pointArg.Value);
+            
+            //Its also possible to add a converter to the Known default converters. Helpful, if you want multiple args of the same custom type:
+            bool success = DefaultConverterFactory.TryAdd(new CustomPointConverter());
+            foreach (var type in DefaultConverterFactory.Types) //Demonstrating that the type is actually registered (and the others)
+            {
+                Console.WriteLine(type.Name);
+            }
+            
+            var otherArg = Argument<CustomPoint>.Builder()
+                .Identifier(new("p", "Point"))
+                .IsRequired()
+                .Description("The coordinate of the block")
+                .Build(); //No custom converter needed anymore
+            
+            var otherParser = CommandLineParser.Builder().Arguments(otherArg).Build();
+            var otherErrors = await otherParser.ParseAsync(args);
+            if (otherErrors.Count == 0)
+            {
+                Console.Write("Worked! ");
+                Console.WriteLine(otherArg.Value);
+            }
+        }
+        
+  
+        static async Task CustomPointListExample()
+        {
+            DefaultConverterFactory.TryAddList<CustomPoint>(new CustomPointConverter());
+            
+            var points = Argument<List<CustomPoint>>.Builder()
+                .Identifier(new("p", "Points"))
+                .IsRequired()
+                .Rule(new ListCountBetweenXAndY<CustomPoint>(1, 3))
+                .Rule(new ListRule<CustomPoint>(p => p.X > 0 && p.Y > 0))
+                .Description("The coordinate of the block")
+                .Build();
+            
+            var otherParser = CommandLineParser.Builder().Argument(points).Build();
+            string[] args = ["-p=10;30,20;40,30;-5,109;2"];
+            var otherErrors = await otherParser.ParseAsync(args);
+            if (otherErrors.Count == 0)
+            {
+                Console.WriteLine("Worked! ");
+                foreach (var point in points.Value)
+                {
+                    Console.WriteLine(point.ToString());
+                }
+            }
+            else
+            {
+                foreach (var error in otherErrors)
+                {
+                    Console.WriteLine(error);
+                }
+            }
         }
 
 
         public static async Task BindingArgs(string[] args)
         {
-            CommandLineParser.WithExceptions = true;
+            foreach (var type in DefaultConverterFactory.Types)
+            {
+                Console.WriteLine(type.Name);
+            }
+            CommandLineParser.WithExceptions = true; //This example fails early
             var firstNameArg =  Argument<string>.Builder()
                 .Description("The first Name")
                 .ShortIdentifier("f")
                 .Build();
             
-            var lastName = Argument<string>.Builder()
+            var ageArg = Argument<int>.Builder()
+                .ShortIdentifier("a")
+                .Build();
+            
+            var lastNameArg = Argument<string>.Builder()
                 .Description("The Last Name")
-                .OnlyWith(firstNameArg)
+                .Dependency(new NotDependency(ageArg.Identifier))
                 .ShortIdentifier("l")
                 .Build();
 
             var parser = CommandLineParser.Builder()
-                .Arguments(firstNameArg, lastName)
+                .Arguments(firstNameArg, ageArg, lastNameArg)
                 .Build();
 
             try
             {
                 await parser.ParseAsync(args);
+                Console.WriteLine(firstNameArg.Value);
+                Console.WriteLine(lastNameArg.Value);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
-          
-
+            
         }
         
+        private class NotDependency : IDependency
+        {
+            private readonly ArgumentIdentifier _notArg;
+
+            public NotDependency(ArgumentIdentifier notArg)
+            {
+                _notArg = notArg;
+            }
+            public List<string> Check(IArgument argument, HashSet<IArgument> otherArgs)
+            {
+                if (!argument.HasValue)
+                {
+                    return [];
+                }
+                
+                List<string> result = [];
+                var foundArg = otherArgs.FirstOrDefault(a => a.Identifier.Equals(_notArg));
+                if (foundArg is not null && foundArg.HasValue)
+                {
+                    string errorMessage =
+                        $"'{argument.Identifier}' requires '{_notArg}' to not be present";
+                    if (CommandLineParser.WithExceptions)
+                    {
+                        throw new DependencyException(errorMessage);
+                    }
+                    result.Add(errorMessage);
+                }
+                return result;
+            }
+        }
     }
 }

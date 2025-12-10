@@ -6,6 +6,6 @@ public sealed class CommandLineArgumentExtractionException(ArgumentIdentifier id
 
     public static string CreateMessage(ArgumentIdentifier identifier, object? expected, object? actual)
     {
-        return $"Error: \"{identifier}\" did not satisfy expected {expected}. Actual is {actual}";
+        return $"'{identifier}' did not satisfy expected {expected}. Actual is {actual}";
     }
 }

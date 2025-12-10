@@ -7,19 +7,22 @@ namespace Lukbes.CommandLineParser.Extracting;
 /// Classic Argument format extractor
 /// Extracts the following: -r, --Argumentblah, -r="djdj", -r='something', -something=valuexyz, etc. 
 /// </summary>
-public sealed class StandardValuesExtractor : IValuesExtractor
+public sealed partial class StandardValuesExtractor : IValuesExtractor
 {
-    private static readonly Regex REGEX = new(
-        @"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>['""]?[^'""\s]*['""]?))?\s*$",
-        RegexOptions.Compiled);
+    [GeneratedRegex(   @"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>""[^""]*""|'[^']*'|[^ \t""']+))?\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
+    private static partial Regex REGEX();
     public (Dictionary<ArgumentIdentifier, string?> identifierAndValues, List<string> errors) Extract(string[] args)
     {
         Dictionary<ArgumentIdentifier, string?> identifierAndValues = new();
         List<string> errors = new();
         foreach (var arg in args)
         {
-            var match = REGEX.Match(arg);
-            if (!match.Success) continue;
+            var match = REGEX().Match(arg);
+            if (!match.Success)
+            {
+                errors.Add($"argument '{arg}' does not have a valid format.");
+            }
             var dashType = match.Groups["dashType"].Value;
             var key = match.Groups["key"].Value;
             var value = match.Groups["value"].Value.Trim('\'', '"');

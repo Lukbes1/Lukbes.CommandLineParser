@@ -153,7 +153,7 @@ namespace Lukbes.CommandLineParser
             IArgument? arg = _arguments.FirstOrDefault(x => x.Identifier.Equals(identifier));
             if (arg is null)
             {
-                return $"Error: Argument \"{identifier}\" could not be found.";
+                return $"Argument '{identifier}' could not be found.";
             }
             try
             {
@@ -161,13 +161,13 @@ namespace Lukbes.CommandLineParser
             
                 if (genericArgs.Length is 0 or > 1)
                 {
-                    return $"Error: Argument \"{identifier}\" must have only one generic argument.";
+                    return $"Argument '{identifier}' must have only one generic argument.";
                 }
 
                 if (genericArgs[0] != typeof(T))
                 {
                     return
-                        $"Error: Argument \"{identifier}\" must have the type  \"{typeof(T)}\". Actual: \"{genericArgs[0]}\"";
+                        $"Argument '{identifier}' must have the type  '{typeof(T)}'. Actual: '{genericArgs[0]}'";
                 }
                 
                 Argument<T> castedArg = (Argument<T>)arg;
@@ -176,7 +176,7 @@ namespace Lukbes.CommandLineParser
             }
             catch (Exception e)
             {
-                return $"Error: Argument \"{identifier}\" could not be casted. Actual: {e.Message}";
+                return $"Argument '{identifier}' could not be casted. Actual: {e.Message}";
             }
         }
 
@@ -303,7 +303,7 @@ namespace Lukbes.CommandLineParser
                 
                 if (parameters.Length != arguments.Length)
                 {
-                    throw new ArgumentException($"Error: The number of arguments in the handler does not match the number of arguments provided. Expected: {parameters.Length}, Actual: {arguments.Length}");
+                    throw new ArgumentException($"The number of arguments in the handler does not match the number of arguments provided. Expected: {parameters.Length}, Actual: {arguments.Length}");
                 }
                 
                 for (int i = 0; i < parameters.Length; i++)
@@ -315,7 +315,7 @@ namespace Lukbes.CommandLineParser
                     if (!IsCompatible(expected, actual))
                     {
                         throw new ArgumentException(
-                            $"Error: The type of {argument.Identifier} does not match expected {expected} type. Actual: {actual}");
+                            $"The type of {argument.Identifier} does not match expected {expected} type. Actual: {actual}");
                     }
                 }
                 

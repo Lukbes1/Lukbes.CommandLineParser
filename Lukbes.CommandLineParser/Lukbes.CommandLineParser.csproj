@@ -4,6 +4,22 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>Lukbes.CommandLineParser</Title>
+    <Authors>Lukbes_</Authors>
+    <Description>A CommandlineParser used to define command line arguments for projects of small but also bigger sizes. </Description>
+    <PackageProjectUrl>https://github.com/Lukbes1/Lukbes.CommandLineParser</PackageProjectUrl>
+    <PackageIcon>CLPIcon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/Lukbes1/Lukbes.CommandLineParser</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>CommandLineParser Parser Arguments Command Bash Executable Argument Option</PackageTags>
+    <PackageReleaseNotes>First Version</PackageReleaseNotes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="CLPIcon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

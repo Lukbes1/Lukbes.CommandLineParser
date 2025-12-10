@@ -5,6 +5,6 @@ public sealed class CommandLineArgumentDoesNotExistException(ArgumentIdentifier 
     
     public static string CreateMessage(ArgumentIdentifier identifier)
     {
-        return $"Error: Argument \"{identifier}\" is not a valid argument";
+        return $"Argument '{identifier}' is not a valid argument";
     }
 }
