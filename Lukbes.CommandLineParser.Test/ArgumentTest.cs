@@ -15,7 +15,7 @@ public class ArgumentTest
     void ApplyValue_Good()
     {
         //arrange, act
-        var arg = _baseArgumentBuilder.Build();
+        IArgument arg = _baseArgumentBuilder.Build();
         arg.Apply("TestTest");
         
         //asssert
@@ -27,7 +27,7 @@ public class ArgumentTest
     void ApplyValue_Required_Good()
     {
         //arrange
-        var arg = _baseArgumentBuilder.IsRequired().Build();
+        IArgument arg = _baseArgumentBuilder.IsRequired().Build();
         
         //act
         arg.Apply("TestTest");
@@ -42,7 +42,7 @@ public class ArgumentTest
     {
         //arrange
         CommandLineParser.WithExceptions = false;
-        var arg = _baseArgumentBuilder.Build();
+        IArgument arg = _baseArgumentBuilder.Build();
         
         //act
         var errors = arg.Apply(null);
@@ -59,7 +59,7 @@ public class ArgumentTest
     {
         //arrange
         CommandLineParser.WithExceptions = true;
-        var arg = _baseArgumentBuilder.IsRequired().Build();
+        IArgument arg = _baseArgumentBuilder.IsRequired().Build();
         
         //act
         var act = () => arg.Apply(value);
@@ -75,7 +75,7 @@ public class ArgumentTest
     {
         //arrange
         CommandLineParser.WithExceptions = false;
-        var arg = _baseArgumentBuilder.IsRequired().Build();
+        IArgument arg = _baseArgumentBuilder.IsRequired().Build();
         
         //act
         var erros = arg.Apply(value);
@@ -95,7 +95,7 @@ public class ArgumentTest
             .Setup(r => r.TryConvert(It.IsAny<string>(), out testValue))
             .Returns("Test Rule error");
 
-        var arg = _baseArgumentBuilder
+        IArgument arg = _baseArgumentBuilder
             .Converter(mockRule.Object)
             .Build();
         
@@ -116,7 +116,7 @@ public class ArgumentTest
             .Setup(r => r.TryConvert(It.IsAny<string>(), out testValue))
             .Returns("Test Rule error");
 
-        var arg = _baseArgumentBuilder
+        IArgument arg = _baseArgumentBuilder
             .Converter(mockRule.Object)
             .Build();
         
@@ -136,7 +136,7 @@ public class ArgumentTest
             .Setup(r => r.TryConvert(It.IsAny<string>(), out testValue))
             .Returns("Test Rule error");
 
-        var arg = _baseArgumentBuilder
+        IArgument arg = _baseArgumentBuilder
             .Converter(mockRule.Object)
             .DefaultValue("123")
             .Build();
@@ -158,7 +158,7 @@ public class ArgumentTest
             .Setup(r => r.Validate(It.IsAny<Argument<string>>()))
             .Returns("Test Rule error");
 
-        var arg = _baseArgumentBuilder
+        IArgument arg = _baseArgumentBuilder
             .Rule(mockRule.Object)
             .Build();
         
@@ -180,7 +180,7 @@ public class ArgumentTest
             .Setup(r => r.Validate(It.IsAny<Argument<string>>()))
             .Returns("Test Rule error");
 
-        var arg = _baseArgumentBuilder
+        IArgument arg = _baseArgumentBuilder
             .Rule(mockRule.Object)
             .Build();
         
@@ -193,7 +193,7 @@ public class ArgumentTest
     void ValidateDependencies_EmptyList_NoErrors()
     {
         //arrange
-        var arg = _baseArgumentBuilder.Build();
+        IArgument arg = _baseArgumentBuilder.Build();
         
         //act
         var errors = arg.ValidateDependencies([]);
@@ -210,7 +210,7 @@ public class ArgumentTest
         mockDependency
             .Setup(r => r.Check(It.IsAny<IArgument>(), It.IsAny<HashSet<IArgument>>()))
             .Returns([]);
-        var arg = _baseArgumentBuilder.Dependency(mockDependency.Object).Build();
+        IArgument arg = _baseArgumentBuilder.Dependency(mockDependency.Object).Build();
         
         //act
         var errors = arg.ValidateDependencies([Argument<string>.Builder().ShortIdentifier("t").Build()]);
@@ -228,7 +228,7 @@ public class ArgumentTest
         mockDependency
             .Setup(r => r.Check(It.IsAny<IArgument>(), It.IsAny<HashSet<IArgument>>()))
             .Returns(["Has Errors"]);
-        var arg = _baseArgumentBuilder.Dependency(mockDependency.Object).Build();
+        IArgument arg = _baseArgumentBuilder.Dependency(mockDependency.Object).Build();
         
         //act
         var act = () => arg.ValidateDependencies([Argument<string>.Builder().ShortIdentifier("t").Build()]);
@@ -246,7 +246,7 @@ public class ArgumentTest
         mockDependency
             .Setup(r => r.Check(It.IsAny<IArgument>(), It.IsAny<HashSet<IArgument>>()))
             .Returns(["Has Errors"]);
-        var arg = _baseArgumentBuilder.Dependency(mockDependency.Object).Build();
+        IArgument arg = _baseArgumentBuilder.Dependency(mockDependency.Object).Build();
         
         //act
         var errors = arg.ValidateDependencies([Argument<string>.Builder().ShortIdentifier("t").Build()]);

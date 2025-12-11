@@ -1,6 +1,4 @@
 ﻿
-using System.Diagnostics;
-using System.Globalization;
 using System.Net.NetworkInformation;
 using Lukbes.CommandLineParser.Arguments;
 using Lukbes.CommandLineParser.Arguments.Dependencies;
@@ -15,7 +13,7 @@ namespace Lukbes.CommandLineParser.Testing
         {
             try
             {
-                await BindingArgs(args);
+                await PrintName();
             }
             catch (Exception e)
             {
@@ -296,13 +294,32 @@ namespace Lukbes.CommandLineParser.Testing
             }
         }
 
+        public static async Task PrintName()
+        {
+            string[] args = [];
+
+            var nameArg = Argument<string>.Builder()
+                .LongIdentifier("name")
+                .Build();
+            
+            var parser = CommandLineParser.Builder()
+                .Argument(nameArg)
+                .Handler((string name) =>
+                {
+                    Console.WriteLine("Your name is: " + name);
+                }, nameArg) // Will always be called now
+                .Handler(() =>
+                {
+                    Console.WriteLine("I got called!"); 
+                })
+                .Build();
+
+            await parser.ParseAsync(args);
+        }
+        
 
         public static async Task BindingArgs(string[] args)
         {
-            foreach (var type in DefaultConverterFactory.Types)
-            {
-                Console.WriteLine(type.Name);
-            }
             CommandLineParser.WithExceptions = true; //This example fails early
             var firstNameArg =  Argument<string>.Builder()
                 .Description("The first Name")

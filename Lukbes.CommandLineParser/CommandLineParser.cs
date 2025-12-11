@@ -278,26 +278,26 @@ namespace Lukbes.CommandLineParser
 
             /// <summary>
             /// Add a handler that gets called if the specified combo of <paramref name="arguments"/> is provided. <br/>
-            /// Gets called if and only if every given argument in <paramref name="arguments"/> has a value <br/>
+            /// Gets called if and only if every given argument in <paramref name="arguments"/> has a value, depending on <paramref name="allRequired"/> <br/>
             /// If <paramref name="arguments"/> is empty, the handler will always be called after parsing
             /// </summary>
             /// <param name="handler">The function that's called if the combo of arguments is provided</param>
-            /// <param name="allRequired">If all args should have values. If true and any arg has no value, handler wont be called</param>
+            /// <param name="allRequired">If all args should have values. If true and any arg has no value, handler won't be called</param>
             /// <param name="arguments">the arguments that should be provided</param>
             /// <example>
-            /// The following code takes in 3 Arguments and is only called if Url-, audio- and videoArgument HasValue returns true 
+            /// The following code takes in 3 Arguments and is always called with Url-, audio- and videoArgument
             /// <code>
             /// builder.Handler((string url, bool audio, bool video) =>
             /// {
             ///      Console.WriteLine($"Url: {url}");
             ///     Console.WriteLine($"Audio: {audio}");
             ///     Console.WriteLine($"Video: {video}");
-            /// }, urlArgument,  audioArgument, videoArgument);
+            /// }, allRequired:true, urlArgument,  audioArgument, videoArgument);
             /// </code>
             /// </example>
             /// <returns></returns>
             /// <exception cref="InvalidOperationException"></exception>
-            public CommandLineParserBuilder Handler(Delegate handler, bool allRequired = false, params IArgument[] arguments)
+            public CommandLineParserBuilder Handler(Delegate handler, bool allRequired, params IArgument[] arguments)
             {
                 var parameters = handler.Method.GetParameters();
                 
@@ -321,6 +321,31 @@ namespace Lukbes.CommandLineParser
                 
                 _parser.ArgumentHandlers.Add(handler, (arguments, allRequired));
                 return this;
+            }
+            
+            /// <summary>
+            /// Add a handler that gets called if the specified combo of <paramref name="arguments"/> is provided. <br/>
+            /// Gets called if and only if every given argument in <paramref name="arguments"/> has a value<br/>
+            /// If <paramref name="arguments"/> is empty, the handler will always be called after parsing
+            /// </summary>
+            /// <param name="handler">The function that's called if the combo of arguments is provided</param>
+            /// <param name="arguments">the arguments that should be provided</param>
+            /// <example>
+            /// The following code takes in 3 Arguments and is only called if Url-, audio- and videoArgument HasValue returns true 
+            /// <code>
+            /// builder.Handler((string url, bool audio, bool video) =>
+            /// {
+            ///      Console.WriteLine($"Url: {url}");
+            ///     Console.WriteLine($"Audio: {audio}");
+            ///     Console.WriteLine($"Video: {video}");
+            /// }, urlArgument,  audioArgument, videoArgument);
+            /// </code>
+            /// </example>
+            /// <returns></returns>
+            /// <exception cref="InvalidOperationException"></exception>
+            public CommandLineParserBuilder Handler(Delegate handler, params IArgument[] arguments)
+            {
+                return Handler(handler, true, arguments);
             }
             
             private static Type UnwrapNullable(Type type)

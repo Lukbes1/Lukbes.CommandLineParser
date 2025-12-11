@@ -11,6 +11,7 @@ A CommandlineParser used to define command line arguments for projects of small 
 - Define custom types and converters for your arguments
 - Create dependencies between multiple arguments 
 - Define how the argument's format should be
+- Freedom of choice for Exceptions vs. Error return messages 
 - Builder pattern for creation of arguments and parser
 ---
 
@@ -40,7 +41,15 @@ The following code shows the minimal setup needed for you to get started:
 
 The example code shows a basic Application using `-n` or `--name` as an argument of type `string`. The result of the 
 
-The following is a subset of what the argument would allow: `-n=MyName`, `-n="My Other Name"`, `-name=Hello`, `-name='Lukbes'`... . See <insert> for more
+The following is a subset of what the argument would allow: `-n=MyName`, `-n="My Other Name"`, `-name=Hello`, `-name='Lukbes'`... . See [Allowed formats](#formatting-and-valuesextractor) for more
+
+## Preface
+
+We often tend to bloat applications with exceptions, even if they are not necessary at all times. 
+
+Therefore, you can turn on or off exceptions whenever you like via `CommandLineParser.WithExceptions = true (or false)`. 
+
+If set to false, you can rely on the `List<string>` of errors returned by all methods.  
 
 ## Arguments
 
@@ -112,13 +121,16 @@ You can implement the `IConverter<T>` interface and thus create a new Converter 
 The following example shows a point class and a custom converter for this class:
 
 ```csharp
-    private readonly struct CustomPoint(int X, int Y)
-    {
-        public override string ToString()
-        {
-            return "{" + X + ", " + Y + "}"; 
-        }
-    }
+     private readonly struct CustomPoint
+     {
+         public readonly int X;
+         public readonly int Y;
+         public CustomPoint(int x, int y) => (X,Y) = (x, y);
+         public override string ToString()
+         {
+             return "{" + X + ", " + Y + "}";
+         }
+     }
     
     private class CustomPointConverter : IConverter<CustomPoint>
     {
@@ -185,7 +197,7 @@ To complete our `CustomPoint` example, we could add the `CustomPointConverter` t
    bool success = DefaultConverterFactory.TryAdd(new CustomPointConverter());
    foreach (var type in DefaultConverterFactory.Types) //Demonstrating that the type is actually registered (and the others)
    {
-       Console.WriteLine(type.Name);
+       Console.WriteLine(type.GetFriendlyTypeName()); //Type extension method
    }
    
    var pointArg = Argument<CustomPoint>.Builder()
@@ -429,7 +441,7 @@ If you want to, you can create your own dependencies, which may not be already p
 
 IDependency works with `IArgument`, so you can depend one argument to any other, no matter the type.
 
-Here is an example, creating a `Dependency` to prevent some argument of being present if this is present: 
+Here is an example, creating an `IDependency` to prevent some argument of being present if the argument it was defined on is present: 
 
 ```csharp
  private class NotDependency : IDependency
@@ -477,3 +489,161 @@ var lastNameArg = Argument<string>.Builder()
     .ShortIdentifier("l")
     .Build();
 ```
+
+---
+
+## CommandLineParser
+
+The CommandLineParser (CLP) is the main start for the parsing. Create a new CLP and give it the arguments that you want to parse, with the array of actual args:
+
+```csharp
+CommandLineParser parser = CommandLineParser.Builder()
+    .Arguments(firstNameArg, ageArg, lastNameArg)
+    .Build();
+```
+
+### Help-argument
+
+The CLP has a standard built in optional help Argument with the ArgumentIdentifier `-h` or `--help`. It shows all Arguments and how they can be used.
+You can change the help argument with `.CustomHelpArg(yourNewHelpArg)`. So if you wish to change the ArgumentIdentifier, require help, or have it depend on something you can do this.
+
+Custom help Formatting is currently not supported.
+
+### Formatting and ValuesExtractor
+
+By default, every argument is expected to match a huge compiled regexp: 
+```regexp
+@"^\s*(?<dashType>--?)(?<key>[A-Za-z][A-Za-z0-9_-]*)(?:=(?<value>""[^""]*""|'[^']*'|[^ \t""']+))?\s*$"
+```
+
+The following table lists the valid and invalid command-line argument forms recognized by the parser (the regexp at the top in particular).
+
+| Example                         | Valid? | Explanation |
+|---------------------------------|--------|-------------|
+| `--flag`                        | ✔️     | Key without a value. |
+| `-flag`                         | ✔️     | Single-dash prefix is allowed. |
+| `--name=John`                   | ✔️     | Unquoted value without spaces. |
+| `--timeout=30`                  | ✔️     | Digits allowed in key after first character. |
+| `--path="/usr/bin"`             | ✔️     | Value in double quotes. |
+| `--msg='Hello world'`           | ✔️     | Value in single quotes. |
+| `--level=debug`                 | ✔️     | Unquoted value. |
+| `-log-level=info`               | ✔️     | Hyphens allowed inside key. |
+| `--max_retries=5`               | ✔️     | Underscores allowed inside key. |
+| `   --key=value   `             | ✔️     | Leading/trailing whitespace allowed. |
+| `--multi-word value`            | ❌     | Unquoted value cannot contain spaces. |
+| `--path=C:\Program Files`       | ❌     | Unquoted value cannot contain spaces. |
+| `--1invalid=value`              | ❌     | Key cannot start with a digit. |
+| `--=value`                      | ❌     | Missing key. |
+| `--key="unfinished`             | ❌     | Unterminated quote. |
+| `---triple`                     | ❌     | Only one or two leading dashes allowed. |
+| `--key='mixed"`                 | ❌     | Mixed or broken quoting is not allowed. |
+
+#### Key Rules Summary
+
+| Component | Allowed | Notes |
+|----------|---------|-------|
+| Dash prefix | `-` or `--` | Exactly one or two dashes. |
+| Key start | `A–Z`, `a–z` | Must start with a letter. |
+| Key body | `A–Z`, `a–z`, `0–9`, `_`, `-` | Alphanumeric + `_` + `-`. |
+| Value | Optional | If present, must follow `=`. |
+| Unquoted value | No spaces or quotes | Example: `--x=abc`. |
+| Double-quoted value | Any text except `"` | Example: `--x="hello world"`. |
+| Single-quoted value | Any text except `'` | Example: `--x='hello world'`. |
+| Whitespace | Leading/trailing only | Not allowed inside unquoted values. |
+
+
+#### Custom ValuesExtractor
+If you wish to allow something other than the current regexp, just implement `IValuesExtractor` interface and use it like so:
+
+```csharp
+private class CustomValuesExtractor : IValuesExtractor
+{
+    //Return type: All Identifier and value combos, errors if they exist. Values are not expected to be parsed at this point.
+    public (Dictionary<ArgumentIdentifier, string?> identifierAndValues, List<string> errors) Extract(string[] args)
+    {
+        //Your implementation...
+        throw new NotImplementedException();
+    }
+}
+
+var parser = CommandLineParser.Builder()
+    .Arguments(firstNameArg, ageArg, lastNameArg)
+    .CustomValuesExtractor(new CustomValuesExtractor())
+    .Build();
+```
+
+### Handler
+
+You can set handlers for certain combinations of your arguments. You first specify the handler with the params being all your desired arguments. Then you give with it the arguments that you wish to be involved in the handler.
+The handler will only be called **if all** arguments are provided and have a value.
+
+Handlers will never be called, if errors occurred on the way, e.g., An argument was required but not given.
+
+Let's say you want to print out the name of the user if he provides a name:
+
+```csharp
+string[] args = ["--name='Linus Torvalds'"];
+
+var nameArg = Argument<string>.Builder()
+    .LongIdentifier("name")
+    .IsRequired()
+    .Build();
+
+var parser = CommandLineParser.Builder()
+    .Argument(nameArg)
+    .Handler((string name) =>
+    {
+        Console.WriteLine("Your name is: " + name);
+    }, nameArg) // Per default, the handler will only be called if name is provided
+    .Build();
+
+await parser.ParseAsync(args);
+```
+
+Result:
+
+```
+Your name is: Linus Torvalds
+```
+
+If you want to call a handler even if no argument was given, set `allRequired:false`:
+
+```csharp
+string[] args = [];
+
+var nameArg = Argument<string>.Builder()
+    .LongIdentifier("name")
+    .Build();
+
+var parser = CommandLineParser.Builder()
+    .Argument(nameArg)
+    .Handler((string name) =>
+    {
+        Console.WriteLine("Your name is: " + name);
+    }, allRequired:false, nameArg) // Will always be called now, if no error happened during extraction and validation
+    .Build();
+```
+
+#### Default handler
+
+If you specify no arguments, you can use the default handler that gets called always, if no errors occurred during extraction or validation:
+
+```csharp
+var nameArg = Argument<string>.Builder()
+    .LongIdentifier("name")
+    .Build();
+
+var parser = CommandLineParser.Builder()
+    .Argument(nameArg)
+    .Handler((string name) =>
+    {
+        Console.WriteLine("Your name is: " + name);
+    }, nameArg) 
+    .Handler(() =>
+    {
+        Console.WriteLine("I got called!"); 
+    }) //Even if no arg was provided, the handler will be called.
+    .Build();
+```
+
+The only benefit you'll get from this is, that it will only be called upon a clean extraction and validation. Therefore, you do not have to check for errors after parsing yourself.

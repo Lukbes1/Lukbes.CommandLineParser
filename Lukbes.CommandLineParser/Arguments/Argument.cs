@@ -83,7 +83,7 @@ public class Argument<T> : IArgument
     /// <exception cref="CommandLineArgumentRequiredException{T}">If string is null or empty and this IsRequired</exception>
     /// <exception cref="CommandLineArgumentConvertException{T}">If <paramref name="value"/> could not be converted to <see cref="T"/></exception>
     /// <exception cref="CommandLineArgumentRuleException">If a Rule failed</exception>
-    public List<string> Apply(string? value)
+    List<string> IArgument.Apply(string? value)
     {
         List<string> errors = new();
         
@@ -145,7 +145,7 @@ public class Argument<T> : IArgument
     /// <param name="allOtherArgs"><inheritdoc cref="IArgument.ValidateDependencies"/></param>
     /// <returns><inheritdoc cref="IArgument.ValidateDependencies"/></returns>
     /// <exception cref="CommandLineArgumentDependencyException">If a dependency fails</exception>
-    public List<string> ValidateDependencies(HashSet<IArgument> allOtherArgs)
+    List<string> IArgument.ValidateDependencies(HashSet<IArgument> allOtherArgs)
     {
         if (_dependencies.Count == 0)
         {
