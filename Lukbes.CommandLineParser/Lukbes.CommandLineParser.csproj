@@ -15,6 +15,7 @@
     <PackageTags>CommandLineParser Parser Arguments Command Bash Executable Argument Option</PackageTags>
     <PackageReleaseNotes>First Version</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

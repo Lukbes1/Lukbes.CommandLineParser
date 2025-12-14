@@ -1,4 +1,6 @@
 # 🚀 Lukbes.CommandLineParser
+![CodeLanguage](https://img.shields.io/badge/C%23-%20?label=.Net10.0&color=darkgreen)
+![NuGet Downloads](https://img.shields.io/nuget/dt/Lukbes.CommandLineParser?color=green)
 
 A CommandlineParser used to define command line arguments for projects of small but also bigger sizes.
 
