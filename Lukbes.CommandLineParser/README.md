@@ -374,6 +374,38 @@ var points = Argument<List<CustomPoint>>.Builder()
                 .Build();
 ```
 
+### Enums
+
+You can use any enum type you like by doing `Argument<YourEnumType>` and giving with it your Enum converter.
+Use the `DefaultConverterFactory.TryAddEnum<Happiness>` to make `Hapiness` available for future arguments or use `.Converter(new EnumConverter<Hapinesss>())` for just one argument.
+
+Example for `Hapiness` enum:
+
+```csharp
+private enum Happiness
+{
+    Sad, 
+    Neutral,
+    Happy
+    
+}
+
+CommandLineParser.WithExceptions = true;
+DefaultConverterFactory.TryAddEnum<Happiness>();
+var happinessArg = Argument<Happiness>.Builder() 
+    /*.Converter(new EnumConverter<Happiness>()) optionally add it just for this argument only*/
+    .LongIdentifier("happiness") 
+    .Build();
+
+var parser = CommandLineParser.Builder().Argument(happinessArg).Build();
+
+await parser.ParseAsync(["--happiness=happy"]);
+Console.WriteLine("Happiness has Value? " + happinessArg.HasValue); 
+Console.WriteLine("Happiness value: " + happinessArg.Value);
+```
+
+Wrong inputs would show like this:
+```Argument '--happiness' could not convert value 'notValid' to type 'Happiness'. Actual: value 'notValid' could not be converted to type 'Happiness', options are [Sad, Neutral, Happy]```
 
 ### Dependencies
 

@@ -13,7 +13,7 @@ namespace Lukbes.CommandLineParser.Testing
         {
             try
             {
-                await PrintName();
+                await Enum_Test();
             }
             catch (Exception e)
             {
@@ -33,6 +33,30 @@ namespace Lukbes.CommandLineParser.Testing
             {
                 Console.WriteLine(num);
             }
+        }
+
+        private enum Happiness
+        {
+            Sad,
+            Neutral,
+            Happy
+        }
+
+        static async Task Enum_Test()
+        {
+            CommandLineParser.WithExceptions = true;
+            DefaultConverterFactory.TryAddEnum<Happiness>();
+            
+            var happinessArg = Argument<Happiness>.Builder()
+                /*.Converter(new EnumConverter<Happines>()) optionally add it just for this argument only*/
+                .LongIdentifier("happiness")
+                .Build();
+            
+            var parser = CommandLineParser.Builder().Argument(happinessArg).Build();
+            
+            await parser.ParseAsync(["--happiness=sa"]);
+            Console.WriteLine("Happiness has Value? " + happinessArg.HasValue);
+            Console.WriteLine("Happiness value: " + happinessArg.Value);
         }
         
         static async Task Example_PrintName(string[] args)
@@ -55,7 +79,7 @@ namespace Lukbes.CommandLineParser.Testing
             
             //Retrieve nameArg when you have no access to the original Arg:
             var argError = parser.TryGetArgument<string>(new("n", "name"), out  var nameArgRetrieved);
-            if (argError is null && !nameArgRetrieved!.HasValue)
+            if (argError is null && !nameArgRetrieved.HasValue)
             {
                 Console.WriteLine("Hello from Mr.Unknown");
             }

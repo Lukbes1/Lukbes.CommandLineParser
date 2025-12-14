@@ -111,7 +111,7 @@ public class Argument<T> : IArgument
         {
             errors.Add(CommandLineArgumentConvertException<T>.CreateMessage(Identifier, value!, convertError));
         }
-        if (convertError is not null && DefaultValue is null)
+        if (convertError is not null && !HasDefaultValue)
         {
             HasValue = false;
             if (CommandLineParser.WithExceptions)
@@ -208,8 +208,17 @@ public class Argument<T> : IArgument
             result.Append(Identifier).Append(' ');
         }
         
-        result.Append($": {typeof(T).GetFriendlyTypeName()} | {Description} ");
+        result.Append($": {typeof(T).GetFriendlyTypeName()}");
+        if (typeof(T).IsEnum)
+        {
+            result.Append($" [{string.Join(", ", Enum.GetNames(typeof(T)))}]");
+        }
 
+        if (!string.IsNullOrEmpty(Description) || HasDefaultValue)
+        {
+            result.Append($" | {Description} ");
+        }
+  
         if (HasDefaultValue)
         {
             result.Append($"(Default: {DefaultValue})");

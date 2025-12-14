@@ -21,7 +21,11 @@ public sealed partial class StandardValuesExtractor : IValuesExtractor
             var match = REGEX().Match(arg);
             if (!match.Success)
             {
-                errors.Add($"argument '{arg}' does not have a valid format.");
+                if (CommandLineParser.WithExceptions)
+                {
+                    throw new CommandLineArgumentExtractionException(arg);
+                }
+                errors.Add(CommandLineArgumentExtractionException.CreateMessage(arg));
             }
             var dashType = match.Groups["dashType"].Value;
             var key = match.Groups["key"].Value;

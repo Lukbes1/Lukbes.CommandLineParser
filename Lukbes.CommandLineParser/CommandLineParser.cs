@@ -62,6 +62,10 @@ namespace Lukbes.CommandLineParser
             List<string> errors = new();
             var extractedValues = Extractor!.Extract(args); 
             errors.AddRange(extractedValues.errors);
+            if (errors.Count > 0)
+            {
+                return errors;
+            }
             var hasHelpArg = extractedValues.identifierAndValues.Any(a => a.Key.Equals(HelpArg!.Identifier));
             if (hasHelpArg) //Stop early on Help:
             {

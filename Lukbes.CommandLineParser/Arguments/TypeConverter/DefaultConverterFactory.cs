@@ -55,6 +55,16 @@ public static class DefaultConverterFactory
     {
        return _converters.TryAdd(typeof(T), new Lazy<object>(() => converter));   
     }
+
+    /// <summary>
+    /// Add a new default enum converter
+    /// </summary>
+    /// <typeparam name="T">The enum you want to add</typeparam>
+    /// <returns></returns>
+    public static bool TryAddEnum<T>() where T : Enum
+    {
+        return _converters.TryAdd(typeof(T), new Lazy<object>(() => new EnumConverter<T>()));
+    }
     
     /// <summary>
     /// Add a new Default List converter. If a Converter of Type <paramref name="TListItemType"/> is found, automatically creates a new ListConverter

@@ -1,11 +1,9 @@
 ﻿namespace Lukbes.CommandLineParser.Arguments;
 
-public sealed class CommandLineArgumentExtractionException(ArgumentIdentifier identifier, object? expected, object? actual) : CommandLineArgumentException(CreateMessage(identifier, expected, actual))
+public sealed class CommandLineArgumentExtractionException(string identifier) : CommandLineArgumentException(CreateMessage(identifier))
 {
-
-
-    public static string CreateMessage(ArgumentIdentifier identifier, object? expected, object? actual)
+    public static string CreateMessage(string identifier)
     {
-        return $"'{identifier}' did not satisfy expected {expected}. Actual is {actual}";
+        return $"'{identifier}' did not satisfy the right format.";
     }
 }

@@ -17,7 +17,7 @@ public class BuilderPropertyNullOrEmptyException<T>(string propertyName) : Excep
     }
     public static string CreateMessage(string propertyName)
     {
-        return $"Property '{propertyName}' of type '{typeof(T).Name}' is required and must not be null or empty";
+        return $"Property '{propertyName}' of type '{typeof(T).GetFriendlyTypeName()}' is required and must not be null or empty";
     }
     
 }
