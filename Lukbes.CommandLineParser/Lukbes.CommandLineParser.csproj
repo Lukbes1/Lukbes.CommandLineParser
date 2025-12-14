@@ -9,10 +9,12 @@
     <Description>A CommandlineParser used to define command line arguments for projects of small but also bigger sizes. </Description>
     <PackageProjectUrl>https://github.com/Lukbes1/Lukbes.CommandLineParser</PackageProjectUrl>
     <PackageIcon>CLPIcon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Lukbes1/Lukbes.CommandLineParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>CommandLineParser Parser Arguments Command Bash Executable Argument Option</PackageTags>
     <PackageReleaseNotes>First Version</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +22,7 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>

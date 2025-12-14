@@ -6,14 +6,20 @@ A CommandlineParser used to define command line arguments for projects of small 
 
 ## ✨ Features
 
-- Create custom arguments
-- Use custom rules for your arguments
-- Define custom types and converters for your arguments
-- Create dependencies between multiple arguments 
-- Define how the argument's format should be
-- Freedom of choice for Exceptions vs. Error return messages 
-- Builder pattern for creation of arguments and parser
+| Category | Goal |
+|--------|------|
+| ✔️ Goals | Support arguments like `MyApplication --flag1 -a -v --some_argument='myInput' --my_custom_type_arg='{10;1}, {30;4}'` |
+| ✔️ Goals | Create custom arguments |
+| ✔️ Goals | Use custom validation rules for arguments (`FileExists`, `IsEmail`, `IsAFunction`) |
+| ✔️ Goals | Define custom types and converters (`FunctionXyz`, `CustomPoint`, `ListOfEmails`) |
+| ✔️ Goals | Create dependencies between arguments (`--first_name` only if `--last_name`, `-a` requires `-b`) |
+| ✔️ Goals | Define custom argument formats (`+myArg` instead of `--myArg`) |
+| ✔️ Goals | Allow freedom of choice between throwing exceptions or returning error messages |
+| ✔️ Goals | Use a builder pattern for creating arguments and the parser |
+| ❌ Non-Goals | Support command-line verbs or complex PowerShell/GitHub-style commands (`commit -m ""`, `push -f origin main`) |
+
 ---
+
 
 ## 📦 Installation
 
